@@ -7,8 +7,9 @@ import {
 
 import Cookies from "js-cookie";
 
-import adminApi from "@/services/adminApi";
-const api = adminApi;
+import {
+  getAdminMonitoring,
+} from "@/api/sdk.gen";
 
 export default function MonitoringSection() {
 
@@ -40,18 +41,20 @@ export default function MonitoringSection() {
 
       /* API */
       const res =
-        await api.get(
-          "/api/admin/monitoring",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
+        await getAdminMonitoring({
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        });
+
+      console.log(
+        "MONITORING:",
+        res
+      );
 
       setAnalytics(
-        res.data.data
+        res.data?.data
       );
 
     } catch (err: any) {
@@ -143,7 +146,7 @@ export default function MonitoringSection() {
 
         <div className="space-y-3">
 
-          {analytics?.topChallenges?.map(
+          {analytics?.top_challenges?.map(
             (
               challenge: any,
               index: number
@@ -157,11 +160,11 @@ export default function MonitoringSection() {
                 <div>
 
                   <p className="font-semibold text-[#032119]">
-                    {challenge.title}
+                    {challenge.challengeTitle}
                   </p>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {challenge.participants} peserta
+                    {challenge.totalParticipants} peserta
                   </p>
 
                 </div>

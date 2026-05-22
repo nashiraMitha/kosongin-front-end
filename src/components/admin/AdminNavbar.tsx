@@ -2,14 +2,56 @@
 
 import React, {
   useState,
+  useEffect,
 } from "react";
 
 import Image from "next/image";
 
+import Cookies from "js-cookie";
+
+import { useRouter }
+from "next/navigation";
+
 export default function AdminNavbar() {
+
+  const [mounted, setMounted] =
+    useState(false);
 
   const [isDropdownOpen, setIsDropdownOpen] =
     useState(false);
+
+  const [adminData,
+    setAdminData] =
+    useState<any>(null);
+
+  const router =
+      useRouter();
+
+  useEffect(() => {
+
+    setMounted(true);
+
+    const storedAdmin =
+      localStorage.getItem(
+        "admin_data"
+      );
+
+    if (storedAdmin) {
+
+      setAdminData(
+        JSON.parse(
+          storedAdmin
+        )
+      );
+    }
+
+  }, []);
+
+  if (!mounted) {
+
+    return null;
+
+  }
 
   /* SCROLL FUNCTION */
   const scrollToSection = (
@@ -131,11 +173,13 @@ export default function AdminNavbar() {
               <div className="p-4 border-b">
 
                 <p className="font-bold text-[#1F3A37]">
-                  Admin
+                  {adminData?.identifier ||
+                    "Admin"}
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  admin@kosongin.com
+                  {adminData?.email ||
+                    "admin@kosongin.com"}
                 </p>
 
               </div>

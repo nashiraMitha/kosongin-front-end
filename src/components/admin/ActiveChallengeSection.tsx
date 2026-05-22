@@ -8,10 +8,27 @@ import {
 import Image from "next/image";
 import Cookies from "js-cookie";
 
-import adminApi from "@/services/adminApi";
-const api = adminApi;
+import { client } from "@/api/client.gen";
+
+import {
+  getAdminChallenges,
+} from "@/api/sdk.gen";
+
+import {
+  deleteAdminChallengesById,
+} from "@/api/sdk.gen";
+
+import ChallengeSection
+from "./ChallengeSection";
 
 export default function ActiveChallengeSection() {
+
+  const [openEdit, setOpenEdit] =
+    useState(false);
+
+  const [selectedChallenge,
+    setSelectedChallenge] =
+    useState<any>(null);
 
   const [challenges, setChallenges] =
     useState<any[]>([]);
@@ -25,48 +42,47 @@ export default function ActiveChallengeSection() {
   /* FETCH CHALLENGES */
   useEffect(() => {
 
+    const token =
+      Cookies.get(
+        "admin_token"
+      );
+      
+      console.log(
+        "TOKEN:",
+        token
+      );
+
+    client.setConfig({
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    });
+
     fetchChallenges();
 
   }, []);
 
-  const fetchChallenges = async () => {
+  const fetchChallenges =
+    async () => {
 
     try {
 
-      /* TOKEN */
-      const token =
-        Cookies.get(
-          "admin_token"
-        );
+      setLoading(true);
 
-      /* API */
       const res =
-        await api.get(
-          "/api/admin/challenges",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
+        await getAdminChallenges();
 
       console.log(
         "CHALLENGES:",
         res.data
       );
 
-      /* SAFE ARRAY */
       const challengesData =
         Array.isArray(
-          res.data.data
+          res.data?.data
         )
           ? res.data.data
-          : Array.isArray(
-              res.data.data?.challenges
-            )
-          ? res.data.data
-              .challenges
           : [];
 
       setChallenges(
@@ -124,6 +140,29 @@ export default function ActiveChallengeSection() {
     );
   }
 
+  const handleDelete =
+    async (id: string) => {
+
+    try {
+
+      await deleteAdminChallengesById({
+
+        path: {
+          id,
+        },
+
+      });
+
+      /* REFRESH DATA */
+      fetchChallenges();
+
+    } catch (err) {
+
+      console.log(err);
+
+    }
+  };
+
   return (
     <div className="bg-[#FFFAF9] rounded-2xl border shadow-lg p-6 mt-8">
 
@@ -156,11 +195,12 @@ export default function ActiveChallengeSection() {
 
                 <Image
                   src={
-                    challenge.image ||
+                    challenge.imageUrl ||
                     "/Challenge/one.png"
                   }
                   alt={challenge.title}
                   fill
+                  sizes="100vw"
                   className="object-cover"
                 />
 
@@ -172,19 +212,25 @@ export default function ActiveChallengeSection() {
                 {/* CATEGORY */}
                 <span
                   className={`inline-block text-[#032119] text-xs px-3 py-1 rounded-full mb-4 border ${
-                    challenge.category ===
+                    challenge.challengesCategory ===
                     "Zero Waste"
-                      ? "border-[#5FAE7B] bg-[#EDF8F1]"
-                      : challenge.category ===
-                        "No Impulse Buy"
-                      ? "border-[#D96B6B] bg-[#FFF1F1]"
-                      : challenge.category ===
-                        "Eco Eating"
-                      ? "border-[#6B9BD9] bg-[#EEF5FF]"
-                      : "border-[#C8B07A] bg-[#FFF9EB]"
+                      ? "border-[#587700] bg-[#F6FBEF]"
+                      :challenge.challengesCategory ===
+                      "SecondHand"
+                      ? "border-[#994904] bg-[#FFF8F2]"
+                      : challenge.challengesCategory ===
+                      "Eco Eating"
+                      ? "border-[#006093] bg-[#F3FAFF]"
+                      : challenge.challengesCategory ===
+                      "No Impulse Buy"
+                      ? "border-[#BA404D] bg-[#FFF5F6]"
+                      : challenge.challengesCategory ===
+                      "LowSpend"
+                      ? "border-[#064232] bg-[#F4FBF8]"
+                      : "border-[#000000] bg-[#F8F8F8]"
                   }`}
                 >
-                  {challenge.category}
+                  {challenge.challengesCategory}
                 </span>
 
                 {/* TITLE */}
@@ -209,7 +255,7 @@ export default function ActiveChallengeSection() {
 
                   <span>
                     {challenge.participants || 0} peserta |{" "}
-                    {challenge.duration} hari
+                    {challenge.durationDays} hari
                   </span>
 
                 </div>
@@ -217,17 +263,101 @@ export default function ActiveChallengeSection() {
                 {/* BUTTON */}
                 <div className="flex gap-3 mt-6">
 
-                  <button className="flex-1 bg-[#90BAB7] hover:bg-[#7DA7A4] transition-all text-white font-semibold py-3 rounded-xl">
+                  <button
+
+                    onClick={() => {
+
+                      setSelectedChallenge(
+                        challenge
+                      );
+
+                      setOpenEdit(true);
+                    }}
+
+                    className="
+                      flex-1
+                      bg-[#90BAB7]
+                      hover:bg-[#7DA7A4]
+                      transition-all
+                      text-white
+                      font-semibold
+                      py-3
+                      rounded-xl
+                    "
+                  >
 
                     Edit
 
                   </button>
 
-                  <button className="flex-1 border border-[#D96B6B] text-[#B23838] hover:bg-[#FFE5E5] transition-all font-semibold py-3 rounded-xl">
-
+                  <button className="flex-1 border border-[#D96B6B] text-[#B23838] hover:bg-[#FFE5E5] transition-all font-semibold py-3 rounded-xl"
+                    onClick={() =>
+                      handleDelete(
+                        challenge.id
+                      )
+                    }
+                  >
                     Nonaktifkan
-
                   </button>
+
+                  {openEdit && (
+
+                    <div className="
+                      fixed
+                      inset-0
+                      z-50
+                      flex
+                      items-center
+                      justify-center
+                      bg-black/5
+                      backdrop-blur-sm
+                      p-4
+                    ">
+
+                      <div className="
+                        bg-white
+                        rounded-2xl
+                        w-full
+                        max-w-3xl
+                        max-h-[90vh]
+                        overflow-y-auto
+                        relative
+                      ">
+
+                        <button
+
+                          onClick={() =>
+                            setOpenEdit(false)
+                          }
+
+                          className="
+                            absolute
+                            top-4
+                            right-4
+                            text-2xl
+                            font-bold
+                            text-gray-500
+                            z-50
+                          "
+                        >
+
+                          ×
+
+                        </button>
+
+                        <ChallengeSection
+
+                          challenge={
+                            selectedChallenge
+                          }
+
+                        />
+
+                      </div>
+
+                    </div>
+
+                  )}
 
                 </div>
 

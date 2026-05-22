@@ -1,7 +1,37 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { getChallenge } from "@/api/sdk.gen";
 
 export default function Community() {
+
+  const [challenges, setChallenges] = useState<any[]>([]);
+
+  useEffect(() => {
+
+    const fetchChallenges = async () => {
+
+      try {
+
+        const res = await getChallenge();
+
+        setChallenges(res.data?.data || []);
+
+      } catch (error) {
+
+        console.error("Failed fetch challenges:", error);
+
+      }
+
+    };
+
+    fetchChallenges();
+
+  }, []);
+
   return (
     <section id="komunitas" className="py-16 md:py-24 bg-[#f5f5f3]">
 
@@ -16,36 +46,7 @@ export default function Community() {
         {/* SCROLL */}
         <div className="flex gap-5 md:gap-8 overflow-x-auto pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden">
 
-          {[
-            {
-              title: "30 Hari Tanpa Fast Fashion",
-              image: "/challenge/one.png",
-              desc: "Tantang dirimu untuk tidak membeli pakaian baru selama 30 hari penuh.",
-              participants: 312,
-              duration: "7 hari",
-            },
-            {
-              title: "Zero Plastic Weekend",
-              image: "/challenge/two.png",
-              desc: "Dua hari akhir pekan tanpa plastik sekali pakai.",
-              participants: 234,
-              duration: "7 hari",
-            },
-            {
-              title: "No Impulse Buy Week",
-              image: "/challenge/three.png",
-              desc: "7 hari penuh tanpa klik \"Beli Sekarang\" tanpa pikir panjang.",
-              participants: 196,
-              duration: "7 hari",
-            },
-            {
-              title: "Makan Lokal Challenge",
-              image: "/challenge/four.jpg",
-              desc: "Hindari delivery food dan makan hanya dari restoran lokal selama seminggu.",
-              participants: 145,
-              duration: "7 hari",
-            },
-          ].map((item, i) => (
+          {challenges.map((item, i) => (
 
             <div
               key={i}
@@ -54,7 +55,7 @@ export default function Community() {
 
               {/* IMAGE */}
               <Image
-                src={item.image}
+                src={item.imageUrl}
                 alt={item.title}
                 width={600}
                 height={600}
@@ -66,7 +67,7 @@ export default function Community() {
 
                 {/* TAG */}
                 <span className="inline-block border border-[#568F87] text-[#568F87] px-3 py-1 rounded-full text-[10px] md:text-sm w-fit">
-                  Zero Waste
+                  {item.challengesCategory}
                 </span>
 
                 {/* TITLE */}
@@ -76,7 +77,7 @@ export default function Community() {
 
                 {/* DESC */}
                 <p className="text-xs md:text-[12px] text-black mt-3 leading-relaxed h-[60px] md:h-[70px]">
-                  {item.desc}
+                  {item.description}
                 </p>
 
                 {/* BOTTOM */}
@@ -93,11 +94,11 @@ export default function Community() {
                       className="w-3 h-3 md:w-4 md:h-4"
                     />
 
-                    <span>{item.participants} peserta</span>
+                    <span>Peserta aktif</span>
 
                     <span>|</span>
 
-                    <span>{item.duration}</span>
+                    <span>{item.durationDays} hari</span>
 
                   </div>
 

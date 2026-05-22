@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Cookies from "js-cookie";
 
-import adminApi from "@/services/adminApi";
-const api = adminApi;
+import {
+  getAdminStats,
+} from "@/api/sdk.gen";
 
 export default function OverviewStats() {
 
@@ -34,19 +35,26 @@ export default function OverviewStats() {
         );
 
       const res =
-        await api.get(
-          "/api/admin/stats",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
+        await getAdminStats({
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        });
+
+        console.log(
+          "OVERVIEW DATA:",
+          res.data
+        );
+
+        console.log(
+          "OVERVIEW INNER:",
+          res.data?.data
         );
 
       /* SET DATA */
       setStats(
-        res.data.data
+        res.data?.data
       );
 
     } catch (err: any) {
@@ -102,26 +110,26 @@ export default function OverviewStats() {
     {
       title: "Total pengguna",
       value:
-        stats?.total_users || 0,
+        stats?.totalUsers || 0,
       icon: "/Pengguna.png",
     },
     {
       title: "Item tercatat",
       value:
-        stats?.total_consumption_logs || 0,
+        stats?.totalConsumptionLogs || 0,
       icon: "/Item.png",
     },
     {
       title:
         "Impulse berhasil dibatalkan",
       value:
-        stats?.total_cancelled_impulse || 0,
+        stats?.totalCancelledImpulse || 0,
       icon: "/impulse.png",
     },
     {
       title: "Challenge Aktif",
       value:
-        stats?.total_active_challenges || 0,
+        stats?.totalActiveChallenges || 0,
       icon: "/target.png",
     },
   ];

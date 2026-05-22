@@ -7,8 +7,9 @@ import {
 
 import Cookies from "js-cookie";
 
-import adminApi from "@/services/adminApi";
-const api = adminApi;
+import {
+  getAdminUsers,
+} from "@/api/sdk.gen";
 
 export default function UserSection() {
 
@@ -19,6 +20,9 @@ export default function UserSection() {
     useState(true);
 
   const [error, setError] =
+    useState("");
+
+  const [search, setSearch] =
     useState("");
 
   /* FETCH USERS */
@@ -40,35 +44,25 @@ export default function UserSection() {
 
       /* API */
       const res =
-        await api.get(
-          "/api/admin/users",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
-          }
-        );
+        await getAdminUsers({
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        });
 
       console.log(
         "USERS RESPONSE:",
         res.data
       );
 
-      /* SAFE ARRAY */
-      const usersData =
-        Array.isArray(
-          res.data.data
-        )
-          ? res.data.data
-          : Array.isArray(
-              res.data.data?.users
-            )
-          ? res.data.data.users
-          : [];
+      console.log(
+        "FINAL USERS:",
+        res.data?.data?.data
+      );
 
       setUsers(
-        usersData
+        res.data?.data?.data || []
       );
 
     } catch (err: any) {
@@ -84,7 +78,7 @@ export default function UserSection() {
       );
 
       setError(
-        "Gagal mengambil data pengguna"
+        "Gagal mengambil daftar pengguna"
       );
 
     } finally {
@@ -94,13 +88,39 @@ export default function UserSection() {
     }
   };
 
+  console.log(
+    "USERS STATE:",
+    users
+  );
+
+  const filteredUsers =
+    users.filter((user) => {
+
+      const keyword =
+        search.toLowerCase();
+
+      return (
+        user.fullName
+          ?.toLowerCase()
+          .includes(keyword) ||
+
+        user.nickName
+          ?.toLowerCase()
+          .includes(keyword) ||
+
+        user.email
+          ?.toLowerCase()
+          .includes(keyword)
+      );
+    });
+
   /* LOADING */
   if (loading) {
 
     return (
       <div className="bg-[#FFFAF9] rounded-2xl border shadow-lg p-6 mb-8">
 
-        <p className="text-[#032119] font-semibold">
+        <p className="font-semibold text-[#032119]">
           Loading users...
         </p>
 
@@ -128,20 +148,24 @@ export default function UserSection() {
       {/* HEADER */}
       <div className="mb-6">
 
-        {/* TITLE */}
-        <h2 className="text-4xl font-bold text-[#032119]">
+        <h2 className="text-3xl font-bold text-[#1F3A37]">
           Data Pengguna
         </h2>
 
-        {/* DESC */}
-        <p className="text-sm text-[#032119] mt-1">
-          Kelola seluruh akun pengguna terdaftar di platform Kosongin.
+        <p className="text-black font-medium text-sm mt-1">
+          Daftar seluruh pengguna platform Kosongin
         </p>
 
-        {/* SEARCH + BUTTON */}
-        <div className="flex items-center gap-4 mt-5">
+      </div>
 
-          {/* SEARCH */}
+      <p className="text-black mb-4">
+        Total Users: {users.length}
+      </p>
+
+      {/* SEARCH + EXPORT */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-4">
+
+        {/* SEARCH */}
           <div className="flex items-center bg-white border border-2 border-[#D7E5E3] rounded-xl px-4 py-2 w-full">
 
             {/* ICON */}
@@ -164,26 +188,115 @@ export default function UserSection() {
 
             <input
               type="text"
-              placeholder="Cari nama atau email pengguna..."
-              className="w-full outline-none text-sm bg-transparent"
+
+              value={search}
+
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+
+              placeholder="
+                Cari nama atau email pengguna...
+              "
+
+              className="
+                w-full
+                outline-none
+                text-sm
+                bg-transparent
+              "
             />
 
           </div>
 
-          {/* EXPORT BUTTON */}
-          <button className="flex items-center justify-center gap-2 bg-[#F5BABB] hover:bg-[#E9A7A8] transition-all text-[#032119] font-bold px-5 py-2 rounded-xl whitespace-nowrap">
+        {/* EXPORT BUTTON */}
+        <button
+          onClick={async () => {
 
-            <img
-              src="/ArrowBwh.png"
-              alt="download"
-              className="h-[18px] w-[18px] object-contain"
-            />
+            try {
 
-            Export CSV
+              const token =
+                Cookies.get(
+                  "admin_token"
+                );
 
-          </button>
+              const response =
+                await fetch(
+                  "https://kosongin-backend-production.up.railway.app/api/admin/users/export",
+                  {
+                    method: "GET",
+                    headers: {
+                      Authorization:
+                        `Bearer ${token}`,
+                    },
+                  }
+                );
 
-        </div>
+              if (!response.ok) {
+
+                throw new Error(
+                  "Gagal export CSV"
+                );
+
+              }
+
+              const blob =
+                await response.blob();
+
+              const url =
+                window.URL.createObjectURL(
+                  blob
+                );
+
+              const link =
+                document.createElement(
+                  "a"
+                );
+
+              link.href = url;
+
+              link.download =
+                "data-pengguna.csv";
+
+              document.body.appendChild(
+                link
+              );
+
+              link.click();
+
+              document.body.removeChild(
+                link
+              );
+
+              window.URL.revokeObjectURL(
+                url
+              );
+
+            } catch (err) {
+
+              console.log(err);
+
+              alert(
+                "Gagal mengunduh CSV"
+              );
+
+            }
+
+          }}
+          className="flex items-center justify-center gap-2 bg-[#F5BABB] hover:bg-[#E9A7A8] transition-all text-[#032119] font-bold px-5 py-2 rounded-xl whitespace-nowrap"
+        >
+
+          <img
+            src="/ArrowBwh.png"
+            alt="download"
+            className="h-[18px] w-[18px] object-contain"
+          />
+
+          Export CSV
+
+        </button>
 
       </div>
 
@@ -221,7 +334,39 @@ export default function UserSection() {
           <tbody>
 
             {Array.isArray(users) &&
-              users.map((user) => (
+              users
+                .filter((user) => {
+
+                  const keyword =
+                    search.toLowerCase();
+
+                  return (
+
+                    user.fullName
+                      ?.toLowerCase()
+                      .includes(keyword)
+
+                    ||
+
+                    user.name
+                      ?.toLowerCase()
+                      .includes(keyword)
+
+                    ||
+
+                    user.email
+                      ?.toLowerCase()
+                      .includes(keyword)
+
+                    ||
+
+                    user.nickname
+                      ?.toLowerCase()
+                      .includes(keyword)
+                  );
+                })
+
+                .map((user) => (
 
                 <tr
                   key={user.id}
@@ -295,7 +440,7 @@ export default function UserSection() {
 
           </tbody>
 
-        </table>
+          </table>
 
       </div>
 
