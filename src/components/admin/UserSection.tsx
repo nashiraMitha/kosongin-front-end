@@ -25,6 +25,11 @@ export default function UserSection() {
   const [search, setSearch] =
     useState("");
 
+  // MODAL DELETE STATE
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   /* FETCH USERS */
   useEffect(() => {
 
@@ -51,47 +56,61 @@ export default function UserSection() {
           },
         });
 
-      console.log(
-        "USERS RESPONSE:",
-        res.data
-      );
-
-      console.log(
-        "FINAL USERS:",
-        res.data?.data?.data
-      );
-
       setUsers(
         res.data?.data?.data || []
       );
 
     } catch (err: any) {
-
       console.log(err);
-
-      console.log(
-        err.response?.status
-      );
-
-      console.log(
-        err.response?.data
-      );
-
       setError(
         "Gagal mengambil daftar pengguna"
       );
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
-  console.log(
-    "USERS STATE:",
-    users
-  );
+  const handleDelete = async () => {
+    if (!selectedUser?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      const token = Cookies.get("admin_token");
+      const url = `https://kosongin-backend-production.up.railway.app/api/admin/users/${selectedUser.id}`;
+      
+      const response = await fetch(url, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const contentType = response.headers.get("content-type");
+      
+      if (contentType && contentType.includes("application/json")) {
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || "Gagal menghapus user");
+        }
+        // Success
+        setIsModalOpen(false);
+        setSelectedUser(null);
+        fetchUsers(); // Refresh list
+      } else {
+        // Jika bukan JSON (kemungkinan 404 HTML atau error server)
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error(`Server error (${response.status}): Endpoint tidak ditemukan atau server bermasalah. Pastikan backend terbaru sudah dideploy.`);
+      }
+
+    } catch (err: any) {
+      console.error(err);
+      alert(`Gagal menghapus user: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredUsers =
     users.filter((user) => {
@@ -370,7 +389,11 @@ export default function UserSection() {
 
                 <tr
                   key={user.id}
-                  className="border-t border-[#E5E7EB] bg-white"
+                  onClick={() => {
+                    setSelectedUser(user);
+                    setIsModalOpen(true);
+                  }}
+                  className="border-t border-[#E5E7EB] bg-white hover:bg-[#74A9A5]/10 cursor-pointer transition-colors"
                 >
 
                   {/* USER */}
@@ -443,6 +466,43 @@ export default function UserSection() {
           </table>
 
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[#FFFAF9] rounded-3xl shadow-2xl p-8 max-w-sm w-full border border-[#D7E5E3] animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-[#1F3A37] text-center mb-4">
+              Konfirmasi Hapus
+            </h3>
+            <p className="text-[#032119] text-center mb-8">
+              Apakah anda ingin menghapus user <span className="font-bold">"{selectedUser?.fullName || selectedUser?.name}"</span> ini?
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedUser(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-[#032119] bg-[#D7E5E3] hover:bg-[#C5D6D3] transition-all active:scale-95"
+              >
+                Tidak
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-white bg-[#F5BABB] hover:bg-[#E9A7A8] transition-all active:scale-95 flex items-center justify-center"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Iya"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

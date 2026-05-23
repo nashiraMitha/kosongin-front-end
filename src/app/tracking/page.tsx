@@ -118,10 +118,39 @@ export default function TrackingPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  const daysOrder = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-  const chartData = Object.entries(dailySummary)
-    .map(([day, amount]) => ({ day, amount }))
-    .sort((a, b) => daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day));
+  // MAPPING MINGGUAN (4 Minggu Terakhir)
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const weeklySummary = data.reduce((acc, item) => {
+    const date = new Date(item.date);
+    const weekNum = getWeekNumber(date);
+    const year = date.getFullYear();
+    const key = `${year}-W${weekNum}`;
+    
+    if (!acc[key]) acc[key] = 0;
+    acc[key] += item.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const chartData = [];
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - (i * 7));
+    const weekNum = getWeekNumber(d);
+    const year = d.getFullYear();
+    const key = `${year}-W${weekNum}`;
+    
+    chartData.push({
+      label: i === 0 ? "Minggu Ini" : `${i} Minggu Lalu`,
+      amount: weeklySummary[key] || 0
+    });
+  }
 
   const handleAdd = async (item: Consumption) => {
     try {
@@ -278,13 +307,13 @@ export default function TrackingPage() {
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-semibold mb-4 text-[#06322b]">Grafik Konsumsi Harian</h3>
+            <h3 className="font-semibold mb-4 text-[#06322b]">Grafik Konsumsi Mingguan</h3>
             {chartData.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-10 italic">Belum ada data</p>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={chartData}>
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
                   <YAxis hide />
                   <Tooltip cursor={{fill: '#f9f9f9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                   <Bar dataKey="amount" fill="#F7C8C9" radius={[4, 4, 4, 4]} />
