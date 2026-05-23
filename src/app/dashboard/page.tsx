@@ -154,7 +154,10 @@ export default function DashboardPage() {
                   <Tooltip 
                     cursor={{fill: '#f9f9f9'}} 
                     contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
-                    formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Total Konsumsi']}
+                    formatter={(value: any) => [
+                      `Rp ${Number(value || 0).toLocaleString('id-ID')}`, 
+                      'Total Konsumsi'
+                    ]}
                   />
                   <Bar dataKey="total" fill="#9bbab1" radius={[8, 8, 8, 8]} barSize={60} />
                 </BarChart>
