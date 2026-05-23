@@ -19,7 +19,7 @@ export type RegisterRequest = {
     fullname: string;
     email: string;
     password: string;
-    password_confirm: string;
+    passwordConfirmation: string;
 };
 
 export type LoginRequest = {
@@ -197,6 +197,7 @@ export type PostAuthRegisterResponses = {
      * Register berhasil
      */
     201: {
+        success?: boolean;
         message?: string;
         data?: {
             id?: string;

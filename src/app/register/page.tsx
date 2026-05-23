@@ -8,13 +8,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 // Import icons
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { postAuthRegister } from "@/api";
+import { client } from "@/lib/api-client";
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     name: "",
+    nickname: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -22,23 +25,33 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState({
     name: "",
+    nickname: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    general: ""
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   // State untuk toggle lihat password
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({ name: "", nickname: "", email: "", password: "", confirmPassword: "", general: "" });
     
     let hasError = false;
-    const newErrors = { name: "", email: "", password: "", confirmPassword: "" };
+    const newErrors = { ...errors };
 
     if (formData.name.length < 2) {
       newErrors.name = "Nama lengkap harus diisi.";
+      hasError = true;
+    }
+
+    if (formData.nickname.length < 3) {
+      newErrors.nickname = "Nickname minimal 3 karakter.";
       hasError = true;
     }
 
@@ -47,8 +60,8 @@ export default function RegisterPage() {
       hasError = true;
     }
 
-    if (formData.password.length < 6) {
-      newErrors.password = "Password minimal 6 karakter.";
+    if (formData.password.length < 8) {
+      newErrors.password = "Password minimal 8 karakter.";
       hasError = true;
     }
 
@@ -59,14 +72,45 @@ export default function RegisterPage() {
 
     if (hasError) {
       setErrors(newErrors);
-    } else {
-      // FIX: Sekarang password ikut disimpan agar bisa login
-      localStorage.setItem("user_name", formData.name);
-      localStorage.setItem("user_email", formData.email);
-      localStorage.setItem("user_password", formData.password); 
-      
-      localStorage.setItem("user_session", "true");
-      router.push("/dashboard");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await postAuthRegister({
+        client,
+        body: {
+          fullname: formData.name,
+          nickname: formData.nickname,
+          email: formData.email,
+          password: formData.password,
+          passwordConfirmation: formData.confirmPassword,
+        },
+      });
+
+      if (error) {
+        // Handle error dari validation middleware (400) atau 409 (Conflict)
+        const errorData = error as any;
+        let errorMsg = errorData.message || "Registrasi gagal.";
+        
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          errorMsg = errorData.errors.map((e: any) => e.message).join(", ");
+        }
+        
+        setErrors(prev => ({ ...prev, general: errorMsg }));
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.success) {
+        // Berhasil registrasi, arahkan ke login
+        router.push("/login");
+      }
+    } catch (err) {
+      setErrors(prev => ({ ...prev, general: "Terjadi kesalahan pada server." }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,6 +128,12 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm italic">
+                {errors.general}
+              </div>
+            )}
+
             {/* Nama Lengkap */}
             <div className="space-y-2 text-left">
               <label className="text-sm font-bold ml-1 text-[#1A3C34]">Nama Lengkap</label>
@@ -91,9 +141,23 @@ export default function RegisterPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Your Name" 
+                disabled={isLoading}
                 className={`rounded-xl py-6 ${errors.name ? "border-red-500 bg-red-50/30" : "border-gray-300 focus:border-[#568F87]"}`}
               />
               {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1 italic font-medium">{errors.name}</p>}
+            </div>
+
+            {/* Nickname */}
+            <div className="space-y-2 text-left">
+              <label className="text-sm font-bold ml-1 text-[#1A3C34]">Nickname</label>
+              <Input 
+                value={formData.nickname}
+                onChange={(e) => setFormData({...formData, nickname: e.target.value})}
+                placeholder="Your Nickname" 
+                disabled={isLoading}
+                className={`rounded-xl py-6 ${errors.nickname ? "border-red-500 bg-red-50/30" : "border-gray-300 focus:border-[#568F87]"}`}
+              />
+              {errors.nickname && <p className="text-red-500 text-[10px] mt-1 ml-1 italic font-medium">{errors.nickname}</p>}
             </div>
 
             {/* Email */}
@@ -104,6 +168,7 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 type="email" 
                 placeholder="example@gmail.com" 
+                disabled={isLoading}
                 className={`rounded-xl py-6 ${errors.email ? "border-red-500 bg-red-50/30" : "border-gray-300 focus:border-[#568F87]"}`}
               />
               {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1 italic font-medium">{errors.email}</p>}
@@ -118,11 +183,13 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   type={showPass ? "text" : "password"} 
                   placeholder="••••••••" 
+                  disabled={isLoading}
                   className={`rounded-xl py-6 pr-12 ${errors.password ? "border-red-500 bg-red-50/30" : "border-gray-300 focus:border-[#568F87]"}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
+                  disabled={isLoading}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#568F87]"
                 >
                   {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -140,11 +207,13 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                   type={showConfirmPass ? "text" : "password"} 
                   placeholder="••••••••" 
+                  disabled={isLoading}
                   className={`rounded-xl py-6 pr-12 ${errors.confirmPassword ? "border-red-500 bg-red-50/30" : "border-gray-300 focus:border-[#568F87]"}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  disabled={isLoading}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#568F87]"
                 >
                   {showConfirmPass ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -167,9 +236,10 @@ export default function RegisterPage() {
 
             <Button 
               type="submit" 
-              className="w-full bg-[#568F87] hover:bg-[#4a7a73] text-white font-bold py-7 rounded-xl text-lg transition-all active:scale-95 shadow-md border-none"
+              disabled={isLoading}
+              className="w-full bg-[#568F87] hover:bg-[#4a7a73] text-white font-bold py-7 rounded-xl text-lg transition-all active:scale-95 shadow-md border-none flex items-center justify-center"
             >
-              Register
+              {isLoading ? <Loader2 className="animate-spin mr-2" /> : "Register"}
             </Button>
           </form>
 

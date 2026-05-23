@@ -7,7 +7,9 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { postAuthLogin } from "@/api";
+import { client } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,60 +17,83 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({ email: "", password: "", general: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     localStorage.removeItem("user_session");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   }, []);
 
   // Fungsi Login Cepat sebagai Admin (Sesuai Desain Figma)
   const handleAdminQuickLogin = () => {
     setEmail("admin@kosongin.com");
     setPassword("password123");
-    // Opsional: Langsung trigger login setelah set state
-    // Namun lebih baik user klik tombol 'Log in' secara manual agar flow terlihat natural
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({ email: "", password: "", general: "" });
     
-    let hasError = false;
-    const newErrors = { email: "", password: "" };
-
-    const registeredEmail = localStorage.getItem("user_email");
-    const registeredPassword = localStorage.getItem("user_password");
-    
-    // Akun Admin Dummy
-    const adminEmail = "admin@kosongin.com";
-    const adminPassword = "password123";
-
-    // Validasi Email
     if (!email) {
-      newErrors.email = "Email wajib diisi.";
-      hasError = true;
-    } else if (email !== registeredEmail && email !== adminEmail) {
-      newErrors.email = "Akun tidak ditemukan.";
-      hasError = true;
+      setErrors(prev => ({ ...prev, email: "Email wajib diisi." }));
+      return;
     }
-
-    // Validasi Password
     if (!password) {
-      newErrors.password = "Password wajib diisi.";
-      hasError = true;
-    } else {
-      const targetPass = email === adminEmail ? adminPassword : registeredPassword;
-      if (password !== targetPass) {
-        newErrors.password = "Password salah.";
-        hasError = true;
-      }
+      setErrors(prev => ({ ...prev, password: "Password wajib diisi." }));
+      return;
     }
 
-    if (hasError) {
-      setErrors(newErrors);
-    } else {
-      if (email === adminEmail) localStorage.setItem("user_name", "Admin Kosongin");
-      localStorage.setItem("user_session", "true");
-      router.push("/dashboard"); 
+    setIsLoading(true);
+
+    try {
+      // Deteksi apakah input adalah email atau nickname
+      const isEmail = email.includes("@");
+      const loginBody = isEmail 
+        ? { email: email, password: password }
+        : { nickname: email, password: password };
+
+      const { data, error } = await postAuthLogin({
+        client,
+        body: loginBody,
+      });
+
+      if (error) {
+        // Handle error dari validation middleware (400)
+        const errorData = error as any;
+        let errorMsg = errorData.message || "Login gagal.";
+        
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          errorMsg = errorData.errors.map((e: any) => e.message).join(", ");
+        }
+        
+        setErrors(prev => ({ ...prev, general: errorMsg }));
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.success) {
+        localStorage.setItem("user_session", "true");
+        if (data.data?.accessToken) {
+          localStorage.setItem("accessToken", data.data.accessToken);
+        }
+        if (data.data?.refreshToken) {
+          localStorage.setItem("refreshToken", data.data.refreshToken);
+        }
+        
+        // Cek jika admin (berdasarkan email dummy atau role dari token jika tersedia)
+        if (email === "admin@kosongin.com") {
+          localStorage.setItem("user_name", "Admin Kosongin");
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/dashboard");
+        }
+      }
+    } catch (err) {
+      setErrors(prev => ({ ...prev, general: "Terjadi kesalahan pada server." }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,12 +111,19 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm italic">
+                {errors.general}
+              </div>
+            )}
+
             <div className="space-y-2 text-left">
               <label className="text-sm font-bold ml-1 text-[#1A3C34]">Email/Username</label>
               <Input 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@mail.com" 
+                disabled={isLoading}
                 className={`rounded-xl py-6 ${errors.email ? "border-red-500" : "border-gray-300"}`}
               />
               {errors.email && <p className="text-red-500 text-[10px] italic">{errors.email}</p>}
@@ -105,9 +137,15 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"} 
                   placeholder="Password" 
+                  disabled={isLoading}
                   className={`rounded-xl py-6 pr-12 ${errors.password ? "border-red-500" : "border-gray-300"}`}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  disabled={isLoading}
+                >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
@@ -124,8 +162,12 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full bg-[#9bbab1] hover:bg-[#8aa79e] text-white font-bold py-7 rounded-xl text-lg border-none shadow-sm">
-              Log in
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-[#9bbab1] hover:bg-[#8aa79e] text-white font-bold py-7 rounded-xl text-lg border-none shadow-sm flex items-center justify-center"
+            >
+              {isLoading ? <Loader2 className="animate-spin mr-2" /> : "Log in"}
             </Button>
           </form>
 
