@@ -6,7 +6,7 @@ import { Consumption } from "@/types/consumption";
 import { useRef } from "react";
 
 type Props = {
-  onAdd: (data: Consumption) => void;
+  onAdd: (data: Consumption) => Promise<void> | void;
 };
 
 export default function ConsumptionForm({ onAdd }: Props) {
@@ -14,6 +14,7 @@ export default function ConsumptionForm({ onAdd }: Props) {
   const [form, setForm] = useState({
     name: "",
     category: "Lainnya",
+    categoryCustom: "",
     amount: "",
     date: "",
     note: "",
@@ -58,9 +59,14 @@ const dateRef = useRef<HTMLInputElement>(null);
   };
 
   // ================= SUBMIT =================
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.amount || !form.date) {
       alert("Isi semua field wajib!");
+      return;
+    }
+
+    if (form.category === "Lainnya" && !form.categoryCustom) {
+      alert("Sebutkan kategori kustom Anda!");
       return;
     }
 
@@ -69,20 +75,20 @@ const dateRef = useRef<HTMLInputElement>(null);
     const newData: Consumption = {
       id: Date.now().toString(),
       name: form.name,
-      category: form.category,
+      category: form.category === "Lainnya" ? form.categoryCustom : form.category,
       amount: Number(form.amount),
       date: form.date,
       note: form.note || undefined,
       imageUrl: preview || undefined,
     };
 
-    setTimeout(() => {
-      onAdd(newData);
-      setLoading(false);
+    try {
+      await onAdd(newData);
 
       setForm({
         name: "",
         category: "Lainnya",
+        categoryCustom: "",
         amount: "",
         date: "",
         note: "",
@@ -90,7 +96,11 @@ const dateRef = useRef<HTMLInputElement>(null);
 
       setPreview(null);
       setFile(null);
-    }, 500);
+    } catch (err) {
+      console.error("Gagal menyimpan:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -156,6 +166,19 @@ const dateRef = useRef<HTMLInputElement>(null);
         </div>
       </div>
 
+      {/* CUSTOM CATEGORY INPUT (Hanya muncul jika "Lainnya" dipilih) */}
+      {form.category === "Lainnya" && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold">Nama Kategori Kustom</label>
+          <input
+            className="input"
+            placeholder="Sebutkan kategori (misal: Hobi, Donasi...)"
+            value={form.categoryCustom}
+            onChange={(e) => setForm({ ...form, categoryCustom: e.target.value })}
+          />
+        </div>
+      )}
+
       {/* HARGA + TANGGAL */}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -173,7 +196,13 @@ const dateRef = useRef<HTMLInputElement>(null);
           <label className="text-sm font-bold">Tanggal</label>
 
           <div
-            onClick={() => dateRef.current?.showPicker?.() || dateRef.current?.click()}
+            onClick={(e) => {
+              // Jika yang diklik adalah div-nya (bukan input-nya langsung), 
+              // baru kita panggil showPicker() untuk memudahkan user.
+              if (e.target !== dateRef.current) {
+                dateRef.current?.showPicker?.();
+              }
+            }}
             className="mt-2 cursor-pointer"
           >
             <input
