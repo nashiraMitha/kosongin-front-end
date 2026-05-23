@@ -5,17 +5,17 @@ import LoginNavbar from "@/components/section/LoginNavbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShieldAlert, ArrowRight, ClipboardList, CheckCircle2, XCircle } from "lucide-react";
+import { ShieldAlert, ArrowRight, ClipboardList, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ImpulseShieldPage() {
   const router = useRouter();
   
-  // State khusus untuk form input
+  // State khusus untuk form input (Harga set awal dari 1000 rupiah)
   const [formData, setFormData] = useState({
     itemName: "",
     category: "Lainnya",
-    price: "",
+    price: "1000",
     link: "",
     reason: "",
     duration: "3 Hari"
@@ -48,7 +48,12 @@ export default function ImpulseShieldPage() {
 
   const handleAddToWaitingList = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.itemName || !formData.price) return;
+    const priceNum = Number(formData.price || 0);
+    if (!formData.itemName) return;
+    if (!priceNum || priceNum < 1000) {
+      alert('Harga minimal Rp 1.000. Masukkan angka yang valid.');
+      return;
+    }
 
     const newItem = {
       ...formData,
@@ -60,7 +65,7 @@ export default function ImpulseShieldPage() {
     const updatedList = [newItem, ...shieldList];
     localStorage.setItem("shield_data", JSON.stringify(updatedList));
     
-    setFormData({ itemName: "", category: "Lainnya", price: "", link: "", reason: "", duration: "3 Hari" });
+    setFormData({ itemName: "", category: "Lainnya", price: "1000", link: "", reason: "", duration: "3 Hari" });
     refreshShieldData();
   };
 
@@ -122,9 +127,19 @@ export default function ImpulseShieldPage() {
                 <label className="text-sm font-bold text-[#06322b]">Harga (Rp)</label>
                 <Input 
                   type="number" 
+                  min={1000}
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  placeholder="0" 
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const n = Number(raw);
+                    // Mencegah nilai minus masuk ke form data
+                    if (raw === '' || n < 0) {
+                      setFormData({...formData, price: ''});
+                    } else {
+                      setFormData({...formData, price: String(Math.trunc(n)) });
+                    }
+                  }}
+                  placeholder="1000" 
                   className="rounded-xl border-gray-200 py-6" 
                 />
               </div>
@@ -133,10 +148,10 @@ export default function ImpulseShieldPage() {
             <div className="space-y-2 text-left">
                <label className="text-sm font-bold text-[#06322b]">Kenapa mau beli? (opsional)</label>
                <textarea 
-                  value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  className="w-full p-4 rounded-xl border border-gray-200 text-sm min-h-[100px] focus:outline-[#5E8B7E]"
-                  placeholder="Tulis alasanmu..."
+                 value={formData.reason}
+                 onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                 className="w-full p-4 rounded-xl border border-gray-200 text-sm min-h-[100px] focus:outline-[#5E8B7E]"
+                 placeholder="Tulis alasanmu..."
                />
             </div>
 
@@ -234,22 +249,85 @@ function InsightCard({ title, value, sub }: any) {
 }
 
 function WaitingItem({ item, onCancel, onBuy }: any) {
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const handleConfirm = () => {
+    setConfirmOpen(false);
+    onBuy?.();
+  };
+
+  // Memastikan format link luar aman (menghindari broken internal route routing)
+  const productHref = item.link 
+    ? item.link.startsWith("http") ? item.link : `https://${item.link}`
+    : "#";
+
   return (
     <Card className="p-6 rounded-[24px] border-gray-50 shadow-sm bg-[#F8FAFA] hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-bold text-[#06322b] text-lg">{item.itemName}</h4>
         <span className="text-[11px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">{item.duration} lagi</span>
       </div>
-      <p className="text-xs font-semibold text-gray-500 mb-1">{item.category} — Rp {Number(item.price).toLocaleString('id-ID')}</p>
+      <p className="text-xs font-semibold text-gray-500 mb-1">{item.category} — Rp {Number(item.price || 0).toLocaleString('id-ID')}</p>
+
+      {/* Link Produk Tetap Aktif & Dapat Diklik */}
+      {item.link ? (
+        <p className="text-sm mb-2">
+          <a 
+            href={productHref} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            onClick={(e) => e.stopPropagation()} 
+            className="text-[#568F87] font-semibold underline hover:text-[#426b64] transition-colors"
+          >
+            🔗 Lihat produk
+          </a>
+        </p>
+      ) : null}
+
       <p className="text-[10px] text-gray-400 mb-5 italic leading-relaxed">"{item.reason || 'Sabar dulu, pikir-pikir lagi.'}"</p>
       <div className="flex gap-3">
         <Button onClick={onCancel} variant="outline" className="flex-1 rounded-xl text-xs font-bold py-5 border-gray-300 hover:bg-red-50 hover:text-red-600 transition-all">
           Batalkan <ArrowRight className="w-3 h-3 ml-2" />
         </Button>
-        <Button onClick={onBuy} variant="outline" className="flex-1 rounded-xl text-xs font-bold py-5 border-gray-300 hover:bg-green-50 hover:text-green-600 transition-all">
+        <Button onClick={() => setConfirmOpen(true)} variant="outline" className="flex-1 rounded-xl text-xs font-bold py-5 border-gray-300 hover:bg-green-50 hover:text-green-600 transition-all">
           Tetap Beli
         </Button>
       </div>
+
+      {/* CUSTOM WARNING MODAL SINKRON STYLE DESIGN KOSONGIN */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[24px] p-8 w-full max-w-md mx-4 shadow-xl border border-gray-50 text-center animate-in zoom-in-95 duration-200">
+            {/* Custom Warning Icon */}
+            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            
+            <h4 className="font-bold text-[#06322b] text-lg mb-2">
+              Kamu yakin mau impulsif beli sesuatu?
+            </h4>
+            
+            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              Pikirin dulu, ini beneran butuh atau cuma pengen doang?
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setConfirmOpen(false)} 
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                Tahan Dulu
+              </button>
+              <button 
+                onClick={handleConfirm} 
+                className="flex-1 py-3 rounded-xl bg-[#9bbab1] hover:bg-[#8aa79e] text-sm text-white font-bold active:scale-95 transition-all shadow-sm"
+              >
+                Saya yakin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

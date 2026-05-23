@@ -138,11 +138,14 @@ export default function DashboardPage() {
                 shieldData.slice(0, 3).map((item, idx) => (
                   <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-50 group hover:border-[#5E8B7E] transition-all">
                     <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName}</p>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-[10px] text-gray-400">Rp {Number(item.price).toLocaleString('id-ID')}</p>
-                      <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.duration}</span>
-                    </div>
-                  </div>
+                                      {item.link ? (
+                                        <p className="text-[11px] text-[#568F87] truncate"><a href={item.link} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()} className="underline">Lihat produk</a></p>
+                                      ) : null}
+                                      <div className="flex justify-between items-center mt-1">
+                                        <p className="text-[10px] text-gray-400">Rp {Number(item.price).toLocaleString('id-ID')}</p>
+                                        <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.duration}</span>
+                                      </div>
+                                    </div>
                 ))
               ) : (
                 <div className="py-10 text-center">
