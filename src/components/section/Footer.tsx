@@ -13,7 +13,7 @@ export default function Footer() {
           <Link href="/" className="group">
 
             <Image
-              src="/logo1.svg"
+              src="/Logo1.svg"
               alt="Logo"
               width={60}
               height={60}
