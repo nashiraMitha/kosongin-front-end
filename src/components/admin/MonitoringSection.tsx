@@ -9,12 +9,16 @@ import Cookies from "js-cookie";
 
 import {
   getAdminMonitoring,
+  getChallengesLandingPageChallenge,
 } from "@/api/sdk.gen";
 
 export default function MonitoringSection() {
 
   const [analytics, setAnalytics] =
     useState<any>(null);
+
+  const [topChallenges, setTopChallenges] =
+  useState<any[]>([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -26,6 +30,8 @@ export default function MonitoringSection() {
   useEffect(() => {
 
     fetchAnalytics();
+
+    fetchTopChallenges();
 
   }, []);
 
@@ -78,6 +84,30 @@ export default function MonitoringSection() {
       setLoading(false);
 
     }
+  };
+
+  const fetchTopChallenges =
+    async () => {
+
+      try {
+
+        const res =
+          await getChallengesLandingPageChallenge();
+
+        console.log(
+          "TOP CHALLENGES:",
+          res.data
+        );
+
+        setTopChallenges(
+          res.data?.data || []
+        );
+
+      } catch (err) {
+
+        console.log(err);
+
+      }
   };
 
   /* LOADING */
@@ -146,7 +176,7 @@ export default function MonitoringSection() {
 
         <div className="space-y-3">
 
-          {analytics?.top_challenges?.map(
+          {topChallenges.map(
             (
               challenge: any,
               index: number
@@ -160,11 +190,11 @@ export default function MonitoringSection() {
                 <div>
 
                   <p className="font-semibold text-[#032119]">
-                    {challenge.challengeTitle}
+                    {challenge.title}
                   </p>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {challenge.totalParticipants} peserta
+                    {challenge.participantsCount} peserta
                   </p>
 
                 </div>

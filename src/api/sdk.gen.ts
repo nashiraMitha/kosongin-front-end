@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAdminChallengesByIdData, DeleteAdminChallengesByIdErrors, DeleteAdminChallengesByIdResponses, DeleteConsumptionLogsByIdData, DeleteConsumptionLogsByIdErrors, DeleteConsumptionLogsByIdResponses, GetAdminChallengesData, GetAdminChallengesErrors, GetAdminChallengesResponses, GetAdminMonitoringData, GetAdminMonitoringErrors, GetAdminMonitoringResponses, GetAdminStatsData, GetAdminStatsErrors, GetAdminStatsResponses, GetAdminUsersData, GetAdminUsersErrors, GetAdminUsersExportData, GetAdminUsersExportErrors, GetAdminUsersExportResponses, GetAdminUsersResponses, GetChallengeByIdData, GetChallengeByIdErrors, GetChallengeByIdResponses, GetChallengeData, GetChallengeErrors, GetChallengeMeData, GetChallengeMeErrors, GetChallengeMeResponses, GetChallengeResponses, GetConsumptionLogsData, GetConsumptionLogsErrors, GetConsumptionLogsResponses, GetDashboardInsightData, GetDashboardInsightErrors, GetDashboardInsightResponses, GetProfileData, GetProfileErrors, GetProfileResponses, GetWishlistData, GetWishlistErrors, GetWishlistResponses, PatchProfileReminderSettingsData, PatchProfileReminderSettingsErrors, PatchProfileReminderSettingsResponses, PatchWishlistByIdData, PatchWishlistByIdErrors, PatchWishlistByIdResponses, PostAdminChallengesData, PostAdminChallengesErrors, PostAdminChallengesResponses, PostAuthForgotPasswordData, PostAuthForgotPasswordResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRefreshData, PostAuthRefreshErrors, PostAuthRefreshResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostAuthResetPasswordData, PostAuthResetPasswordResponses, PostChallengeByIdJoinData, PostChallengeByIdJoinErrors, PostChallengeByIdJoinResponses, PostConsumptionLogsData, PostConsumptionLogsErrors, PostConsumptionLogsResponses, PostUploadSignatureData, PostUploadSignatureResponses, PostWishlistData, PostWishlistErrors, PostWishlistResponses, PutAdminChallengesByIdData, PutAdminChallengesByIdErrors, PutAdminChallengesByIdResponses, PutConsumptionLogsByIdData, PutConsumptionLogsByIdErrors, PutConsumptionLogsByIdResponses } from './types.gen';
+import type { DeleteAdminChallengesByIdData, DeleteAdminChallengesByIdResponses, DeleteAdminUsersByIdData, DeleteAdminUsersByIdErrors, DeleteAdminUsersByIdResponses, DeleteConsumptionLogsByIdData, DeleteConsumptionLogsByIdErrors, DeleteConsumptionLogsByIdResponses, DeleteProfileDeleteUserData, DeleteProfileDeleteUserErrors, DeleteProfileDeleteUserResponses, GetAdminChallengesData, GetAdminChallengesResponses, GetAdminMonitoringData, GetAdminMonitoringResponses, GetAdminStatsData, GetAdminStatsErrors, GetAdminStatsResponses, GetAdminUsersData, GetAdminUsersExportData, GetAdminUsersExportResponses, GetAdminUsersResponses, GetChallengesByIdData, GetChallengesByIdErrors, GetChallengesByIdParticipantsData, GetChallengesByIdParticipantsResponses, GetChallengesByIdResponses, GetChallengesData, GetChallengesErrors, GetChallengesLandingPageChallengeData, GetChallengesLandingPageChallengeResponses, GetChallengesMeData, GetChallengesMeErrors, GetChallengesMeResponses, GetChallengesResponses, GetConsumptionLogsData, GetConsumptionLogsErrors, GetConsumptionLogsResponses, GetDashboardInsightData, GetDashboardInsightErrors, GetDashboardInsightResponses, GetHelperUsersGetAllData, GetHelperUsersGetAllResponses, GetHelperUsersGetByIdData, GetHelperUsersGetByIdResponses, GetProfileData, GetProfileErrors, GetProfileResponses, GetWishlistData, GetWishlistErrors, GetWishlistResponses, PatchProfileReminderSettingsData, PatchProfileReminderSettingsErrors, PatchProfileReminderSettingsResponses, PatchWishlistByIdData, PatchWishlistByIdErrors, PatchWishlistByIdResponses, PostAdminChallengesData, PostAdminChallengesResponses, PostAuthForgotPasswordData, PostAuthForgotPasswordResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutErrors, PostAuthLogoutResponses, PostAuthRefreshData, PostAuthRefreshErrors, PostAuthRefreshResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostAuthResetPasswordData, PostAuthResetPasswordResponses, PostChallengesByIdJoinData, PostChallengesByIdJoinErrors, PostChallengesByIdJoinResponses, PostConsumptionLogsData, PostConsumptionLogsErrors, PostConsumptionLogsResponses, PostHelperAdminCreateData, PostHelperAdminCreateErrors, PostHelperAdminCreateResponses, PostHelperUsersCreateData, PostHelperUsersCreateResponses, PostUploadSignatureData, PostUploadSignatureResponses, PostWishlistData, PostWishlistErrors, PostWishlistResponses, PutAdminChallengesByIdData, PutAdminChallengesByIdResponses, PutConsumptionLogsByIdData, PutConsumptionLogsByIdErrors, PutConsumptionLogsByIdResponses, PutHelperUsersUpdateByIdData, PutHelperUsersUpdateByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -110,6 +110,15 @@ export const patchProfileReminderSettings = <ThrowOnError extends boolean = fals
 });
 
 /**
+ * Hapus akun pengguna secara permanen
+ */
+export const deleteProfileDeleteUser = <ThrowOnError extends boolean = false>(options?: Options<DeleteProfileDeleteUserData, ThrowOnError>) => (options?.client ?? client).delete<DeleteProfileDeleteUserResponses, DeleteProfileDeleteUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/profile/delete-user',
+    ...options
+});
+
+/**
  * Ambil semua riwayat konsumsi
  */
 export const getConsumptionLogs = <ThrowOnError extends boolean = false>(options?: Options<GetConsumptionLogsData, ThrowOnError>) => (options?.client ?? client).get<GetConsumptionLogsResponses, GetConsumptionLogsErrors, ThrowOnError>({
@@ -200,36 +209,50 @@ export const patchWishlistById = <ThrowOnError extends boolean = false>(options:
 /**
  * Ambil semua challenge aktif
  */
-export const getChallenge = <ThrowOnError extends boolean = false>(options?: Options<GetChallengeData, ThrowOnError>) => (options?.client ?? client).get<GetChallengeResponses, GetChallengeErrors, ThrowOnError>({
+export const getChallenges = <ThrowOnError extends boolean = false>(options?: Options<GetChallengesData, ThrowOnError>) => (options?.client ?? client).get<GetChallengesResponses, GetChallengesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/challenge',
+    url: '/challenges',
     ...options
 });
 
 /**
  * Ambil challenge yang diikuti
  */
-export const getChallengeMe = <ThrowOnError extends boolean = false>(options?: Options<GetChallengeMeData, ThrowOnError>) => (options?.client ?? client).get<GetChallengeMeResponses, GetChallengeMeErrors, ThrowOnError>({
+export const getChallengesMe = <ThrowOnError extends boolean = false>(options?: Options<GetChallengesMeData, ThrowOnError>) => (options?.client ?? client).get<GetChallengesMeResponses, GetChallengesMeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/challenge/me',
+    url: '/challenges/me',
     ...options
 });
 
 /**
+ * Ambil 5 challenge terpopuler untuk landing page
+ */
+export const getChallengesLandingPageChallenge = <ThrowOnError extends boolean = false>(options?: Options<GetChallengesLandingPageChallengeData, ThrowOnError>) => (options?.client ?? client).get<GetChallengesLandingPageChallengeResponses, unknown, ThrowOnError>({ url: '/challenges/landing-page-challenge', ...options });
+
+/**
  * Ambil detail challenge
  */
-export const getChallengeById = <ThrowOnError extends boolean = false>(options: Options<GetChallengeByIdData, ThrowOnError>) => (options.client ?? client).get<GetChallengeByIdResponses, GetChallengeByIdErrors, ThrowOnError>({
+export const getChallengesById = <ThrowOnError extends boolean = false>(options: Options<GetChallengesByIdData, ThrowOnError>) => (options.client ?? client).get<GetChallengesByIdResponses, GetChallengesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/challenge/{id}',
+    url: '/challenges/{id}',
     ...options
 });
 
 /**
  * Ikut challenge
  */
-export const postChallengeByIdJoin = <ThrowOnError extends boolean = false>(options: Options<PostChallengeByIdJoinData, ThrowOnError>) => (options.client ?? client).post<PostChallengeByIdJoinResponses, PostChallengeByIdJoinErrors, ThrowOnError>({
+export const postChallengesByIdJoin = <ThrowOnError extends boolean = false>(options: Options<PostChallengesByIdJoinData, ThrowOnError>) => (options.client ?? client).post<PostChallengesByIdJoinResponses, PostChallengesByIdJoinErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/challenge/{id}/join',
+    url: '/challenges/{id}/join',
+    ...options
+});
+
+/**
+ * Ambil daftar peserta challenge
+ */
+export const getChallengesByIdParticipants = <ThrowOnError extends boolean = false>(options: Options<GetChallengesByIdParticipantsData, ThrowOnError>) => (options.client ?? client).get<GetChallengesByIdParticipantsResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/challenges/{id}/participants',
     ...options
 });
 
@@ -237,7 +260,54 @@ export const postChallengeByIdJoin = <ThrowOnError extends boolean = false>(opti
  * Dapatkan signature untuk upload Cloudinary
  */
 export const postUploadSignature = <ThrowOnError extends boolean = false>(options: Options<PostUploadSignatureData, ThrowOnError>) => (options.client ?? client).post<PostUploadSignatureResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/upload/signature',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Buat akun admin baru (menggunakan special code)
+ */
+export const postHelperAdminCreate = <ThrowOnError extends boolean = false>(options: Options<PostHelperAdminCreateData, ThrowOnError>) => (options.client ?? client).post<PostHelperAdminCreateResponses, PostHelperAdminCreateErrors, ThrowOnError>({
+    url: '/helper/admin/create',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Buat user baru (helper)
+ */
+export const postHelperUsersCreate = <ThrowOnError extends boolean = false>(options: Options<PostHelperUsersCreateData, ThrowOnError>) => (options.client ?? client).post<PostHelperUsersCreateResponses, unknown, ThrowOnError>({
+    url: '/helper/users/create',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ambil semua user (helper)
+ */
+export const getHelperUsersGetAll = <ThrowOnError extends boolean = false>(options?: Options<GetHelperUsersGetAllData, ThrowOnError>) => (options?.client ?? client).get<GetHelperUsersGetAllResponses, unknown, ThrowOnError>({ url: '/helper/users/get/all', ...options });
+
+/**
+ * Ambil user berdasarkan ID (helper)
+ */
+export const getHelperUsersGetById = <ThrowOnError extends boolean = false>(options: Options<GetHelperUsersGetByIdData, ThrowOnError>) => (options.client ?? client).get<GetHelperUsersGetByIdResponses, unknown, ThrowOnError>({ url: '/helper/users/get/{id}', ...options });
+
+/**
+ * Update user berdasarkan ID (helper)
+ */
+export const putHelperUsersUpdateById = <ThrowOnError extends boolean = false>(options: Options<PutHelperUsersUpdateByIdData, ThrowOnError>) => (options.client ?? client).put<PutHelperUsersUpdateByIdResponses, unknown, ThrowOnError>({
+    url: '/helper/users/update/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -257,16 +327,25 @@ export const getAdminStats = <ThrowOnError extends boolean = false>(options?: Op
 /**
  * Daftar pengguna (admin)
  */
-export const getAdminUsers = <ThrowOnError extends boolean = false>(options?: Options<GetAdminUsersData, ThrowOnError>) => (options?.client ?? client).get<GetAdminUsersResponses, GetAdminUsersErrors, ThrowOnError>({
+export const getAdminUsers = <ThrowOnError extends boolean = false>(options?: Options<GetAdminUsersData, ThrowOnError>) => (options?.client ?? client).get<GetAdminUsersResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/users',
     ...options
 });
 
 /**
+ * Hapus akun pengguna (admin)
+ */
+export const deleteAdminUsersById = <ThrowOnError extends boolean = false>(options: Options<DeleteAdminUsersByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteAdminUsersByIdResponses, DeleteAdminUsersByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/users/{id}',
+    ...options
+});
+
+/**
  * Export data pengguna ke CSV
  */
-export const getAdminUsersExport = <ThrowOnError extends boolean = false>(options?: Options<GetAdminUsersExportData, ThrowOnError>) => (options?.client ?? client).get<GetAdminUsersExportResponses, GetAdminUsersExportErrors, ThrowOnError>({
+export const getAdminUsersExport = <ThrowOnError extends boolean = false>(options?: Options<GetAdminUsersExportData, ThrowOnError>) => (options?.client ?? client).get<GetAdminUsersExportResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/users/export',
     ...options
@@ -275,7 +354,7 @@ export const getAdminUsersExport = <ThrowOnError extends boolean = false>(option
 /**
  * Monitoring aktivitas pengguna
  */
-export const getAdminMonitoring = <ThrowOnError extends boolean = false>(options?: Options<GetAdminMonitoringData, ThrowOnError>) => (options?.client ?? client).get<GetAdminMonitoringResponses, GetAdminMonitoringErrors, ThrowOnError>({
+export const getAdminMonitoring = <ThrowOnError extends boolean = false>(options?: Options<GetAdminMonitoringData, ThrowOnError>) => (options?.client ?? client).get<GetAdminMonitoringResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/monitoring',
     ...options
@@ -284,7 +363,7 @@ export const getAdminMonitoring = <ThrowOnError extends boolean = false>(options
 /**
  * Semua challenge (admin)
  */
-export const getAdminChallenges = <ThrowOnError extends boolean = false>(options?: Options<GetAdminChallengesData, ThrowOnError>) => (options?.client ?? client).get<GetAdminChallengesResponses, GetAdminChallengesErrors, ThrowOnError>({
+export const getAdminChallenges = <ThrowOnError extends boolean = false>(options?: Options<GetAdminChallengesData, ThrowOnError>) => (options?.client ?? client).get<GetAdminChallengesResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/challenges',
     ...options
@@ -293,16 +372,20 @@ export const getAdminChallenges = <ThrowOnError extends boolean = false>(options
 /**
  * Buat challenge baru
  */
-export const postAdminChallenges = <ThrowOnError extends boolean = false>(options?: Options<PostAdminChallengesData, ThrowOnError>) => (options?.client ?? client).post<PostAdminChallengesResponses, PostAdminChallengesErrors, ThrowOnError>({
+export const postAdminChallenges = <ThrowOnError extends boolean = false>(options: Options<PostAdminChallengesData, ThrowOnError>) => (options.client ?? client).post<PostAdminChallengesResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/challenges',
-    ...options
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
  * Hapus challenge
  */
-export const deleteAdminChallengesById = <ThrowOnError extends boolean = false>(options: Options<DeleteAdminChallengesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteAdminChallengesByIdResponses, DeleteAdminChallengesByIdErrors, ThrowOnError>({
+export const deleteAdminChallengesById = <ThrowOnError extends boolean = false>(options: Options<DeleteAdminChallengesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteAdminChallengesByIdResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/challenges/{id}',
     ...options
@@ -311,8 +394,12 @@ export const deleteAdminChallengesById = <ThrowOnError extends boolean = false>(
 /**
  * Update challenge
  */
-export const putAdminChallengesById = <ThrowOnError extends boolean = false>(options: Options<PutAdminChallengesByIdData, ThrowOnError>) => (options.client ?? client).put<PutAdminChallengesByIdResponses, PutAdminChallengesByIdErrors, ThrowOnError>({
+export const putAdminChallengesById = <ThrowOnError extends boolean = false>(options: Options<PutAdminChallengesByIdData, ThrowOnError>) => (options.client ?? client).put<PutAdminChallengesByIdResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/admin/challenges/{id}',
-    ...options
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
