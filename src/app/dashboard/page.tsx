@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Plus, ShieldCheck, ClipboardList, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getConsumptionLogs, getWishlist, getChallengeMe, getDashboardInsight } from "@/api";
+import { getConsumptionLogs, getWishlist, getChallengesMe, getDashboardInsight } from "@/api";
 import { client } from "@/lib/api-client";
 
 export default function DashboardPage() {
@@ -42,7 +42,7 @@ export default function DashboardPage() {
         }
 
         const wishData = wishRes.data;
-        if (wishData?.status === "success" || (wishData as any)?.success) {
+        if (wishData?.success) {
           const rawData = wishData?.data || [];
           const activeWishlist = rawData.filter(
             (item: any) => item.whislistStatus === "waiting"
