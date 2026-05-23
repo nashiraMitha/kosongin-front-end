@@ -1,4 +1,14 @@
 {
   "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/login/page": "app/admin/login/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/forbidden/page": "app/forbidden/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/forgot-password/page": "app/forgot-password/page.js",
+  "/login/page": "app/login/page.js",
+  "/komunitas/page": "app/komunitas/page.js",
+  "/page": "app/page.js",
+  "/shield/page": "app/shield/page.js",
+  "/register/page": "app/register/page.js",
+  "/tracking/page": "app/tracking/page.js"
 }
