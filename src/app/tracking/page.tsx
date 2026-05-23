@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart,
@@ -40,7 +40,6 @@ export default function TrackingPage() {
 
       if (response?.success && Array.isArray(response.data)) {
         const mappedData: Consumption[] = response.data.map((log: ConsumptionLog) => {
-          // Map lowercase backend category back to display category
           const categoryDisplayMapping: Record<string, string> = {
             "makanan & minuman": "Makanan & Minuman",
             "fashion": "Fashion",
@@ -54,7 +53,7 @@ export default function TrackingPage() {
             id: log.id || "",
             name: log.itemName || "",
             category: categoryDisplayMapping[log.itemCategory || ""] || "Lainnya",
-            amount: Number(log.amount) || 0, // Konversi ke Number untuk menangani tipe decimal dari DB
+            amount: Number(log.amount) || 0,
             date: log.consumedAt ? new Date(log.consumedAt).toISOString().split('T')[0] : "",
           };
         });
@@ -67,9 +66,8 @@ export default function TrackingPage() {
     }
   };
 
-  // --- 1. LOGIKA PROTEKSI & PEMUATAN DATA ---
+  // --- 1. LOGIKA PROTEKSI SARKAS & PEMUATAN DATA ---
   useEffect(() => {
-    // Cek Sesi: Jika belum login, tendang ke halaman login
     const userSession = localStorage.getItem("user_session");
     if (!userSession) {
       router.push("/login");
@@ -79,7 +77,7 @@ export default function TrackingPage() {
     fetchLogs();
   }, [router]);
 
-  // --- 3. LOGIKA FILTERING & RINGKASAN ---
+  // --- 2. LOGIKA FILTERING PERIODE BERJALAN ---
   const now = new Date();
 
   const filteredData = data.filter((item) => {
@@ -152,9 +150,9 @@ export default function TrackingPage() {
     });
   }
 
+  // --- 3. LOGIKA TAMBAH LOG KONSUMSI KE RAILWAY ---
   const handleAdd = async (item: Consumption) => {
     try {
-      // Backend expects lowercase categories
       const categoryMapping: Record<string, string> = {
         "Makanan & Minuman": "makanan & minuman",
         "Fashion": "fashion",
@@ -171,8 +169,6 @@ export default function TrackingPage() {
         body: {
           itemName: item.name,
           itemCategory: mappedCategory as any,
-          // Backend validation: itemCategoryCustom is REQUIRED if itemCategory is 'lainnya'
-          // and MUST NOT be present if itemCategory is NOT 'lainnya'
           ...(mappedCategory === "lainnya" 
             ? { itemCategoryCustom: item.category === "Lainnya" ? "Umum" : item.category } 
             : {}),
@@ -184,7 +180,6 @@ export default function TrackingPage() {
 
       if (error) {
         console.error("Gagal menambah log konsumsi:", error);
-        // Tampilkan pesan error yang lebih spesifik jika ada
         const errorData = error as any;
         const msg = errorData.message || (errorData.errors?.[0]?.message) || "Gagal menyimpan ke server.";
         alert(msg);
@@ -192,8 +187,7 @@ export default function TrackingPage() {
       }
 
       if (response?.success) {
-        // Refresh data from server to ensure sync
-        fetchLogs();
+        fetchLogs(); // Ambil ulang data segar dari server agar langsung update
       }
     } catch (err) {
       console.error("Terjadi kesalahan saat menambah data:", err);
@@ -225,7 +219,7 @@ export default function TrackingPage() {
   const previousTotal = previousData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="min-h-screen bg-[#FFFAF9] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
       <LoginNavbar />
 
       <div className="px-6 md:px-12 lg:px-20 mt-10">
@@ -244,17 +238,17 @@ export default function TrackingPage() {
             <h3 className="font-semibold mb-2 text-[#06322b]">Riwayat Konsumsi</h3>
             {isLoading ? (
               <div className="text-center py-10">Memuat data...</div>
-            ) : data.length === 0 ? (
+            ) : filteredData.length === 0 ? ( // 🔥 DIUBAH: Mengecek data yang terfilter biar sinkron
               <EmptyState />
             ) : (
-              <ConsumptionList data={data} />
+              <ConsumptionList data={filteredData} /> // 🔥 DIUBAH: Hanya melempar data periode terpilih ke tabel list bawah
             )}
           </div>
         </div>
 
         {/* SIDEBAR INSIGHT */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-[#06322b]">Insight Visual</h3>
               <div className="bg-[#EDEAE8] p-1 rounded-xl flex text-sm font-medium">
@@ -278,19 +272,19 @@ export default function TrackingPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-[#EEF4F3] p-4 rounded-lg">
-                <p className="text-[10px] font-bold text-[#568F87] uppercase tracking-wider">Periode Ini</p>
+              <div className="bg-[#F8FAFA] p-4 rounded-lg border border-gray-50 shadow-sm">
+                <p className="text-[10px] font-bold text-[#06322b] uppercase tracking-wider">Periode Ini</p>
                 <p className="text-lg font-bold">Rp {total.toLocaleString('id-ID')}</p>
               </div>
-              <div className="bg-[#FCEAEA] p-4 rounded-lg">
-                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Periode Lalu</p>
+              <div className="bg-[#F8FAFA] p-4 rounded-lg border border-gray-50 shadow-sm">
+                <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Periode Lalu</p>
                 <p className="text-lg font-bold">Rp {previousTotal.toLocaleString('id-ID')}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               {Object.entries(categorySummary).map(([category, amount]) => (
-                <div key={category} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div key={category} className="bg-[#F8FAFA] p-4 rounded-xl border border-gray-50 shadow-sm">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="font-bold">{category}</span>
                     <span className="font-bold text-[#4E827B]">Rp {amount.toLocaleString('id-ID')}</span>
@@ -306,7 +300,7 @@ export default function TrackingPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-50">
             <h3 className="font-semibold mb-4 text-[#06322b]">Grafik Konsumsi Mingguan</h3>
             {chartData.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-10 italic">Belum ada data</p>
