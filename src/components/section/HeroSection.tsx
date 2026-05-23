@@ -43,7 +43,7 @@ export default function HeroSection() {
           <div className="flex justify-center md:justify-end">
 
             <Image
-              src="/headline.png"
+              src="/Headline.png"
               alt="Headline"
               width={300}
               height={300}
