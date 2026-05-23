@@ -674,7 +674,7 @@ export type GetChallengeData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/challenge';
+    url: '/challenges';
 };
 
 export type GetChallengeErrors = {

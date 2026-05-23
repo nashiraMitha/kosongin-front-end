@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import LoginNavbar from "@/components/section/LoginNavbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Users, Calendar, ArrowRight, ImageIcon, Trophy, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +12,7 @@ const INITIAL_CHALLENGES = [
   { id: 2, title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang. Aktifkan Impulse Shield setiap mau checkout!" },
   { id: 3, title: "Selasa Kendalikan Emisi", tag: "Zero Waste", participants: 2100, duration: "1 Hari", dateEnd: "13 Mei 2026", desc: "Gunakan transportasi umum atau jalan kaki setiap hari Selasa untuk bumi." },
 ];
+
 
 export default function CommunityPage() {
   const router = useRouter();
@@ -120,7 +120,6 @@ export default function CommunityPage() {
   );
 }
 
-// --- KOMPONEN CARD DENGAN SOLUSI 1 ---
 function ChallengeCard({ data, isJoined, onClick }: any) {
   return (
     <div onClick={onClick} className="cursor-pointer group">
