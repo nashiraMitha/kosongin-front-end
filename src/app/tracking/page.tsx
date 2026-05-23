@@ -16,14 +16,56 @@ import ConsumptionForm from "@/components/tracking/ConsumptionForm";
 import ConsumptionList from "@/components/tracking/ConsumptionList";
 import EmptyState from "@/components/tracking/EmptyState";
 import { Consumption } from "@/types/consumption";
+import { getConsumptionLogs, postConsumptionLogs } from "@/api";
+import { client } from "@/lib/api-client";
+import { ConsumptionLog } from "@/api/types.gen";
 
 export default function TrackingPage() {
   const router = useRouter();
   const [data, setData] = useState<Consumption[]>([]);
   const [filter, setFilter] = useState<"weekly" | "monthly">("weekly");
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Ref untuk menandai apakah komponen baru pertama kali dimuat (mencegah data terhapus)
-  const isInitialMount = useRef(true);
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const { data: response, error } = await getConsumptionLogs({
+        client,
+      });
+
+      if (error) {
+        console.error("Gagal mengambil log konsumsi:", error);
+        return;
+      }
+
+      if (response?.success && Array.isArray(response.data)) {
+        const mappedData: Consumption[] = response.data.map((log: ConsumptionLog) => {
+          // Map lowercase backend category back to display category
+          const categoryDisplayMapping: Record<string, string> = {
+            "makanan & minuman": "Makanan & Minuman",
+            "fashion": "Fashion",
+            "elektronik": "Elektronik",
+            "perawatan diri": "Perawatan Diri",
+            "hiburan": "Hiburan",
+            "lainnya": "Lainnya"
+          };
+
+          return {
+            id: log.id || "",
+            name: log.itemName || "",
+            category: categoryDisplayMapping[log.itemCategory || ""] || "Lainnya",
+            amount: Number(log.amount) || 0, // Konversi ke Number untuk menangani tipe decimal dari DB
+            date: log.consumedAt ? new Date(log.consumedAt).toISOString().split('T')[0] : "",
+          };
+        });
+        setData(mappedData);
+      }
+    } catch (err) {
+      console.error("Terjadi kesalahan saat memuat data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // --- 1. LOGIKA PROTEKSI & PEMUATAN DATA ---
   useEffect(() => {
@@ -34,31 +76,8 @@ export default function TrackingPage() {
       return;
     }
 
-    // Ambil Data: Load data dari localStorage
-    const savedData = localStorage.getItem("consumption_data");
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (Array.isArray(parsed)) {
-          setData(parsed);
-        }
-      } catch (e) {
-        console.error("Gagal memuat data dari localStorage", e);
-      }
-    }
+    fetchLogs();
   }, [router]);
-
-  // --- 2. LOGIKA PENYIMPANAN DATA ---
-  useEffect(() => {
-    // Jangan simpan data ke localStorage jika ini adalah render pertama kali
-    // agar data asli di storage tidak tertimpa array kosong []
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    localStorage.setItem("consumption_data", JSON.stringify(data));
-  }, [data]);
 
   // --- 3. LOGIKA FILTERING & RINGKASAN ---
   const now = new Date();
@@ -104,8 +123,52 @@ export default function TrackingPage() {
     .map(([day, amount]) => ({ day, amount }))
     .sort((a, b) => daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day));
 
-  const handleAdd = (item: Consumption) => {
-    setData((prev) => [item, ...prev]);
+  const handleAdd = async (item: Consumption) => {
+    try {
+      // Backend expects lowercase categories
+      const categoryMapping: Record<string, string> = {
+        "Makanan & Minuman": "makanan & minuman",
+        "Fashion": "fashion",
+        "Elektronik": "elektronik",
+        "Perawatan Diri": "perawatan diri",
+        "Hiburan": "hiburan",
+        "Lainnya": "lainnya"
+      };
+
+      const mappedCategory = categoryMapping[item.category] || "lainnya";
+      
+      const { data: response, error } = await postConsumptionLogs({
+        client,
+        body: {
+          itemName: item.name,
+          itemCategory: mappedCategory as any,
+          // Backend validation: itemCategoryCustom is REQUIRED if itemCategory is 'lainnya'
+          // and MUST NOT be present if itemCategory is NOT 'lainnya'
+          ...(mappedCategory === "lainnya" 
+            ? { itemCategoryCustom: item.category === "Lainnya" ? "Umum" : item.category } 
+            : {}),
+          amount: item.amount,
+          consumedAt: new Date(item.date).toISOString(),
+          notes: item.note,
+        }
+      });
+
+      if (error) {
+        console.error("Gagal menambah log konsumsi:", error);
+        // Tampilkan pesan error yang lebih spesifik jika ada
+        const errorData = error as any;
+        const msg = errorData.message || (errorData.errors?.[0]?.message) || "Gagal menyimpan ke server.";
+        alert(msg);
+        return;
+      }
+
+      if (response?.success) {
+        // Refresh data from server to ensure sync
+        fetchLogs();
+      }
+    } catch (err) {
+      console.error("Terjadi kesalahan saat menambah data:", err);
+    }
   };
 
   // --- 4. PERHITUNGAN PERIODE LALU ---
@@ -150,7 +213,9 @@ export default function TrackingPage() {
           <ConsumptionForm onAdd={handleAdd} />
           <div>
             <h3 className="font-semibold mb-2 text-[#06322b]">Riwayat Konsumsi</h3>
-            {data.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-10">Memuat data...</div>
+            ) : data.length === 0 ? (
               <EmptyState />
             ) : (
               <ConsumptionList data={data} />

@@ -77,7 +77,13 @@ export default function Community() {
               >
                 {/* 3. PERBAIKAN: Menghubungkan URL Image dengan base URL database biar gambarnya gak pecah */}
                 <Image
-                  src={item.imageUrl ? `https://kosongin-backend-production.up.railway.app${item.imageUrl}` : '/community.png'}
+                  src={
+                    item.imageUrl
+                      ? item.imageUrl.startsWith("http")
+                        ? item.imageUrl
+                        : `https://kosongin-backend-production.up.railway.app${item.imageUrl}`
+                      : "/community.png"
+                  }
                   alt={item.title || 'Challenge'}
                   width={600}
                   height={600}
