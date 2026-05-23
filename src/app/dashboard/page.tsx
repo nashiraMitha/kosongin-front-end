@@ -3,25 +3,19 @@
 import React, { useState, useEffect } from "react";
 import LoginNavbar from "@/components/section/LoginNavbar";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { Plus, ShieldCheck, Users, ArrowRight, ClipboardList, ImageIcon, Target } from "lucide-react";
-import Link from "next/navigation"; // Pastikan import ini benar atau gunakan 'next/link'
+import { Plus, ShieldCheck, ClipboardList, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getConsumptionLogs, getWishlist, getChallengeMe, getDashboardInsight } from "@/api";
+import { client } from "@/lib/api-client";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [consumptionData, setConsumptionData] = useState<any[]>([]);
+  const [insightData, setInsightData] = useState<any>(null);
   const [shieldData, setShieldData] = useState<any[]>([]);
-  const [joinedChallenges, setJoinedChallenges] = useState<number[]>([]);
   const [userName, setUserName] = useState("User");
   const [loading, setLoading] = useState(true);
-
-  const ALL_CHALLENGES = [
-    { id: 1, title: "Zero Plastic Weekend", tag: "Zero Waste" },
-    { id: 2, title: "Belanja Sadar", tag: "No Impulse" },
-    { id: 3, title: "Selasa Kendalikan Emisi", tag: "Zero Waste" },
-  ];
 
   useEffect(() => {
     const userSession = localStorage.getItem("user_session");
@@ -32,25 +26,59 @@ export default function DashboardPage() {
 
     setUserName(localStorage.getItem("user_name") || "User");
     
-    const savedCons = localStorage.getItem("consumption_data");
-    const savedShield = localStorage.getItem("shield_data");
-    const savedChall = localStorage.getItem("joined_challenges");
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Parallel fetching for performance
+        const [consRes, wishRes, insightRes] = await Promise.all([
+          getConsumptionLogs({ client }),
+          getWishlist({ client }),
+          getDashboardInsight({ client })
+        ]);
 
-    if (savedCons) setConsumptionData(JSON.parse(savedCons));
-    if (savedShield) {
-      const parsed = JSON.parse(savedShield);
-      setShieldData(parsed.filter((item: any) => item.status === "Waiting"));
-    }
-    if (savedChall) setJoinedChallenges(JSON.parse(savedChall));
-    
-    setLoading(false);
+        if (consRes.data?.success) {
+          setConsumptionData(consRes.data.data || []);
+        }
+
+        const wishData = wishRes.data;
+        if (wishData?.status === "success" || (wishData as any)?.success) {
+          const rawData = wishData?.data || [];
+          const activeWishlist = rawData.filter(
+            (item: any) => item.whislistStatus === "waiting"
+          );
+          setShieldData(activeWishlist);
+        }
+
+        if (insightRes.data?.success) {
+          setInsightData(insightRes.data.data);
+        }
+
+      } catch (err) {
+        console.error("Gagal memuat data dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [router]);
 
   const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
+      <LoginNavbar />
+      <main className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#9bbab1] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#06322b] font-medium">Memuat dashboard...</p>
+        </div>
+      </main>
+    </div>
+  );
 
-  // --- VIEW: EMPTY STATE (GAMBAR P SUDAH DIHAPUS) ---
+  // --- VIEW: EMPTY STATE ---
   if (consumptionData.length === 0) {
     return (
       <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
@@ -59,7 +87,6 @@ export default function DashboardPage() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-50/50 blur-[120px] rounded-full -z-10" />
           
           <Card className="w-full max-w-xl p-10 md:p-16 bg-white rounded-[40px] shadow-sm border border-gray-100 flex flex-col items-center text-center">
-            {/* Bagian Daun Tanpa Badge P */}
             <div className="mb-10">
               <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center bg-[#F8FAFA] rounded-full">
                 <img src="/daun.png" alt="Leaf" className="w-24 md:w-28 object-contain" />
@@ -105,22 +132,34 @@ export default function DashboardPage() {
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Belanja" value={`Rp ${totalExpense.toLocaleString('id-ID')}`} sub="Periode ini" color="bg-pink-50" />
-          <StatCard title="Impulse Shield" value={shieldData.length.toString()} sub="Item ditunda" color="bg-teal-50" />
-          <StatCard title="Challenge" value={joinedChallenges.length.toString()} sub="Sedang diikuti" color="bg-blue-50" />
-          <StatCard title="Daily Tracking" value={consumptionData.length.toString()} sub="Catatan aktif" color="bg-orange-50" />
+          <StatCard title="Impulse Shield" value={(insightData?.wishlist_count || 0).toString()} sub="Item ditunda" color="bg-teal-50" />
+          <StatCard title="Challenge" value={(insightData?.active_challenge || 0).toString()} sub="Sedang diikuti" color="bg-blue-50" />
+          <StatCard title="Streak" value={(insightData?.streak || 0).toString()} sub="Hari berturut-turut" color="bg-orange-50" />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 p-8 rounded-[32px] border-gray-100 shadow-sm bg-white">
             <h3 className="font-bold text-[#06322b] mb-8 flex items-center gap-2 text-lg">
-              <Target className="w-5 h-5 text-[#5E8B7E]" /> Tren Konsumsi
+              <Target className="w-5 h-5 text-[#5E8B7E]" /> Tren Konsumsi (4 Minggu Terakhir)
             </h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={consumptionData}>
-                  <XAxis dataKey="date" hide />
-                  <Tooltip cursor={{fill: '#f9f9f9'}} contentStyle={{borderRadius: '16px', border: 'none'}} />
-                  <Bar dataKey="amount" fill="#9bbab1" radius={[8, 8, 8, 8]} barSize={40} />
+                <BarChart data={insightData?.weekly_trend || []}>
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{fontSize: 12, fill: '#9CA3AF'}}
+                  />
+                  <Tooltip 
+                    cursor={{fill: '#f9f9f9'}} 
+                    contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
+                    formatter={(value: any) => [
+                      `Rp ${Number(value || 0).toLocaleString('id-ID')}`, 
+                      'Total Konsumsi'
+                    ]}
+                  />
+                  <Bar dataKey="total" fill="#9bbab1" radius={[8, 8, 8, 8]} barSize={60} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -138,12 +177,9 @@ export default function DashboardPage() {
                 shieldData.slice(0, 3).map((item, idx) => (
                   <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-50 group hover:border-[#5E8B7E] transition-all">
                     <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName}</p>
-                                      {item.link ? (
-                                        <p className="text-[11px] text-[#568F87] truncate"><a href={item.link} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()} className="underline">Lihat produk</a></p>
-                                      ) : null}
                                       <div className="flex justify-between items-center mt-1">
-                                        <p className="text-[10px] text-gray-400">Rp {Number(item.price).toLocaleString('id-ID')}</p>
-                                        <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.duration}</span>
+                                        <p className="text-[10px] text-gray-400">Rp {Number(item.estimatePrice).toLocaleString('id-ID')}</p>
+                                        <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.waitingDays} Hari</span>
                                       </div>
                                     </div>
                 ))
