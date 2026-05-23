@@ -6,10 +6,12 @@ import {
 } from "react";
 
 import Cookies from "js-cookie";
+import { Trash2 } from "lucide-react";
 
 import {
   getAdminUsers,
 } from "@/api/sdk.gen";
+import { client } from "@/lib/api-client";
 
 export default function UserSection() {
 
@@ -50,6 +52,7 @@ export default function UserSection() {
       /* API */
       const res =
         await getAdminUsers({
+          client,
           headers: {
             Authorization:
               `Bearer ${token}`,
@@ -345,6 +348,10 @@ export default function UserSection() {
                 Status
               </th>
 
+              <th className="px-6 py-4 text-center text-sm font-bold">
+                Aksi
+              </th>
+
             </tr>
 
           </thead>
@@ -389,11 +396,7 @@ export default function UserSection() {
 
                 <tr
                   key={user.id}
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setIsModalOpen(true);
-                  }}
-                  className="border-t border-[#E5E7EB] bg-white hover:bg-[#74A9A5]/10 cursor-pointer transition-colors"
+                  className="border-t border-[#E5E7EB] bg-white hover:bg-[#74A9A5]/5 transition-colors"
                 >
 
                   {/* USER */}
@@ -455,6 +458,20 @@ export default function UserSection() {
                         : "Tidak Aktif"}
                     </span>
 
+                  </td>
+
+                  {/* ACTION */}
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsModalOpen(true);
+                      }}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
+                      title="Hapus Pengguna"
+                    >
+                      <Trash2 size={20} />
+                    </button>
                   </td>
 
                 </tr>
