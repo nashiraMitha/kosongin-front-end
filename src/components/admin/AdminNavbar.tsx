@@ -9,6 +9,8 @@ import Image from "next/image";
 
 import Cookies from "js-cookie";
 
+import { postAuthLogout } from "@/api/sdk.gen";
+
 import { useRouter }
 from "next/navigation";
 
@@ -185,6 +187,29 @@ export default function AdminNavbar() {
               </div>
 
               <button
+                onClick={async () => {
+                  try {
+                    const token = Cookies.get("admin_token");
+
+                    /* BACKEND LOGOUT */
+                    await postAuthLogout({
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                  } catch (err) {
+                    console.log(err);
+                  } finally {
+                    /* HAPUS COOKIE */
+                    Cookies.remove("admin_token");
+
+                    /* HAPUS STORAGE */
+                    localStorage.removeItem("admin_data");
+
+                    /* REDIRECT */
+                    window.location.href = "/admin/login";
+                  }
+                }}
                 className="w-full text-left px-4 py-3 hover:bg-gray-50 text-red-500 font-medium"
               >
                 Logout
