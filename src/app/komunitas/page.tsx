@@ -6,16 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, ArrowRight, ImageIcon, Trophy, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { client } from "@/api/client.gen"; // Pastikan path import client API generator sudah sesuai
+import { client } from "@/api/client.gen"; 
 
 export default function CommunityPage() {
   const router = useRouter();
   const [challenges, setChallenges] = useState<any[]>([]);
-  const [joinedChallenges, setJoinedChallenges] = useState<any[]>([]); // Mendukung tipe data ID string/number dari database
+  const [joinedChallenges, setJoinedChallenges] = useState<any[]>([]); 
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Ambil data dari database Backend yang diisi oleh Admin
   const fetchAdminChallenges = async () => {
     try {
       setIsLoading(true);
@@ -23,7 +22,6 @@ export default function CommunityPage() {
       const data = res?.data?.data ?? res?.data ?? [];
       
       if (Array.isArray(data)) {
-        // Lakukan pemetaan properti (mapping) agar skema data admin cocok dengan variabel UI komponen
         const mappedData = data.map((item: any, index: number) => {
           const rawId = item.id ?? item._id ?? item.challengeId ?? index;
           return {
@@ -34,14 +32,13 @@ export default function CommunityPage() {
             duration: item.durationDays ? `${item.durationDays} Hari` : (item.duration || "-"),
             dateEnd: item.endDate || item.dateEnd || "Selama Aktif",
             desc: item.description || item.desc || "Tidak ada deskripsi.",
-            imageUrl: item.imageUrl || ""
+            imageUrl: item.imageUrl || "" 
           };
         });
         setChallenges(mappedData);
       }
     } catch (error) {
       console.error("Gagal memuat data tantangan dari admin:", error);
-      // Fallback data bawaan jika server admin bermasalah/kosong biar halaman tidak rusak
       setChallenges([
         { id: 1, title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan." },
         { id: 2, title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang. Aktifkan Impulse Shield setiap mau checkout!" },
@@ -56,7 +53,6 @@ export default function CommunityPage() {
     const userSession = localStorage.getItem("user_session");
     if (!userSession) { router.push("/login"); return; }
     
-    // Ambil riwayat challenge yang sudah diikuti oleh user dari localStorage
     const saved = localStorage.getItem("joined_challenges");
     if (saved) {
       try {
@@ -70,7 +66,6 @@ export default function CommunityPage() {
   }, [router]);
 
   const handleJoin = (id: any) => {
-    // Normalisasi ID menjadi string untuk kemudahan pengecekan kecocokan data array
     const normalizedId = typeof id === "number" ? id : String(id);
     if (joinedChallenges.includes(normalizedId)) return;
 
@@ -78,9 +73,7 @@ export default function CommunityPage() {
     setJoinedChallenges(updated);
     localStorage.setItem("joined_challenges", JSON.stringify(updated));
     
-    // Jika modal sedang terbuka, perbarui state selectedChallenge agar tombol langsung berubah jadi "Berhasil!"
     if (selectedChallenge && selectedChallenge.id === id) {
-      // Menambahkan jumlah peserta secara visual demi kepuasan interaksi user (opsional)
       setSelectedChallenge({
         ...selectedChallenge,
         participants: selectedChallenge.participants + 1
@@ -88,7 +81,6 @@ export default function CommunityPage() {
     }
   };
 
-  // Helper pencocokan ID koleksi gabungan
   const isUserJoined = (id: any) => {
     const targetId = typeof id === "number" ? id : String(id);
     return joinedChallenges.includes(targetId);
@@ -156,12 +148,25 @@ export default function CommunityPage() {
               <h2 className="text-4xl font-bold text-[#06322b] mb-8">[{selectedChallenge.title}]</h2>
               
               <div className="flex flex-col md:flex-row gap-10 bg-[#F8FAFA] p-8 rounded-[24px] border border-gray-100">
-                <div className="w-full md:w-1/2 aspect-square bg-white border border-dashed border-gray-200 rounded-[16px] flex items-center justify-center text-gray-200 overflow-hidden">
+                <div className="w-full md:w-1/2 aspect-square bg-white border border-dashed border-gray-200 rounded-[16px] flex items-center justify-center text-gray-200 overflow-hidden relative">
                   {selectedChallenge.imageUrl ? (
                     <img 
-                      src={`https://kosongin-backend-production.up.railway.app${selectedChallenge.imageUrl}`} 
+                      src={
+                        String(selectedChallenge.imageUrl).startsWith("http")
+                          ? selectedChallenge.imageUrl
+                          : `https://kosongin-backend-production.up.railway.app${selectedChallenge.imageUrl}`
+                      } 
                       alt={selectedChallenge.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Jika URL ganda merusak element, sembunyikan gambar hancur dan tampilkan info teks rapi
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<div class="flex flex-col items-center text-gray-300 gap-1"><span class="text-2xl">🖼️</span><span class="text-[11px]">Image Ready</span></div>';
+                        }
+                      }}
                     />
                   ) : (
                     <ImageIcon size={64} />
@@ -214,12 +219,24 @@ function ChallengeCard({ data, isJoined, onClick }: any) {
     <div onClick={onClick} className="cursor-pointer group">
       <Card className="p-5 rounded-[32px] border-gray-100 shadow-sm bg-white hover:shadow-md transition-all h-full flex flex-col justify-between">
         <div>
-          <div className="aspect-video bg-[#F8FAFA] rounded-[24px] mb-4 flex items-center justify-center border border-gray-100 text-gray-300 overflow-hidden">
+          <div className="aspect-video bg-[#F8FAFA] rounded-[24px] mb-4 flex items-center justify-center border border-gray-100 text-gray-300 overflow-hidden relative">
             {data.imageUrl ? (
               <img 
-                src={`https://kosongin-backend-production.up.railway.app${data.imageUrl}`} 
+                src={
+                  String(data.imageUrl).startsWith("http")
+                    ? data.imageUrl
+                    : `https://kosongin-backend-production.up.railway.app${data.imageUrl}`
+                } 
                 alt={data.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="flex flex-col items-center text-gray-300 gap-1"><span class="text-xl">🖼️</span><span class="text-[10px]">Image Ready</span></div>';
+                  }
+                }}
               />
             ) : (
               <ImageIcon className="w-10 h-10 group-hover:scale-110 transition-transform" />

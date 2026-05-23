@@ -2,27 +2,14 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-
       {
         protocol: "https",
-        hostname: "picsum.photos",
+        hostname: "**", // 🔥 SAKTI: Mengizinkan SEMUA domain di dunia, termasuk URL ganda buatan backend, agar tidak crash lagi!
       },
-
       {
-        protocol: "https",
-        hostname: "placehold.co",
+        protocol: "http",
+        hostname: "**",
       },
-
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-
-      {
-        protocol: "https",
-        hostname: "avanieco.com",
-      },
-
     ],
   },
 };
