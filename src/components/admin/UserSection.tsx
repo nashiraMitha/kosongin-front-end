@@ -360,7 +360,7 @@ export default function UserSection() {
 
                     ||
 
-                    user.nickname
+                    user.nickName
                       ?.toLowerCase()
                       .includes(keyword)
                   );
