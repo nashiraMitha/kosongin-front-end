@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { client } from "@/api/client.gen";
-import { getChallengeMe } from "@/api/sdk.gen";
+import { getChallengesMe } from "@/api/sdk.gen";
 import Cookies from "js-cookie";
 
 export default function Community() {
@@ -29,7 +29,7 @@ export default function Community() {
         if (token) {
           client.setConfig({ headers: { Authorization: `Bearer ${token}` } });
           try {
-            const meRes: any = await getChallengeMe();
+            const meRes: any = await getChallengesMe();
             const myData = meRes?.data?.data ?? meRes?.data ?? [];
             const ids = myData.map((c: any) => c.id ?? c.challengeId ?? c.challenge?.id).filter(Boolean);
             setJoinedIds(ids);
