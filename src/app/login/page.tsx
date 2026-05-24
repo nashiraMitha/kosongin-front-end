@@ -81,7 +81,16 @@ export default function LoginPage() {
         if (data.data?.refreshToken) {
           localStorage.setItem("refreshToken", data.data.refreshToken);
         }
-        
+
+        // Save user display name if returned by API; fallback to email/nickname
+        try {
+          const returnedUser = data.data?.user ?? data.data?.userData ?? null;
+          const displayName = returnedUser?.fullname || returnedUser?.nickname || email || "User";
+          localStorage.setItem("user_name", displayName);
+        } catch (e) {
+          localStorage.setItem("user_name", email || "User");
+        }
+          
         // Cek jika admin (berdasarkan email dummy atau role dari token jika tersedia)
         if (email === "admin@kosongin.com") {
           localStorage.setItem("user_name", "Admin Kosongin");

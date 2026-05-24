@@ -20,17 +20,16 @@ export default function Home() {
   }, []);
 
   return (
-    // PENTING: Struktur pembungkus utama diatur relative untuk mengamankan posisi sticky navbar
     <div className="relative min-h-screen bg-white flex flex-col w-full">
       {/* NAVBAR */}
       <Navbar />
       
-      {/* SECTION 1: HERO UTAMA (DIKUNCI PUTIH SOLID TOTAL) */}
+      {/* SECTION 1: HERO UTAMA */}
       <section className="relative z-20 bg-white block w-full">
         <Hero />
       </section>
       
-      {/* SECTION 2: ABOUT SECTION / REM DIGITAL (DENGAN BACKGROUND) */}
+      {/* SECTION 2: ABOUT SECTION */}
       <section className="relative z-10 w-full bg-white block">
         <About />
       </section>
@@ -45,9 +44,15 @@ export default function Home() {
         <HowItWorks />
       </section>
 
-      {/* SECTION 5: COMMUNITY CHALLENGES */}
-      <section id="komunitas" className="relative z-20 bg-white block">
-        <Community />
+      {/* ======================================================== */}
+      {/* SECTION 5: COMMUNITY CHALLENGES PREVIEW                 */}
+      {/* DIBERIKAN CONTAINER AGAR KARTU TIDAK MELEBAR MERUSAK LAYAR */}
+      {/* ======================================================== */}
+      <section id="komunitas" className="relative z-20 bg-white block w-full">
+        <div className="w-full mx-auto">
+          {/* PENTING: Mengirimkan properti previewOnly={true} agar judulnya kembali menjadi "Community Preview" */}
+          <Community previewOnly={true} />
+        </div>
       </section>
 
       {/* CTA & FOOTER */}

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Users, Calendar, ArrowRight, ImageIcon, Trophy, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { client } from "@/api/client.gen"; 
+import { getChallengesMe } from "@/api/sdk.gen";
+import Cookies from "js-cookie";
 
 export default function CommunityPage() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function CommunityPage() {
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 1. Ambil data tantangan dari Admin Backend
   const fetchAdminChallenges = async () => {
     try {
       setIsLoading(true);
@@ -32,66 +35,83 @@ export default function CommunityPage() {
             duration: item.durationDays ? `${item.durationDays} Hari` : (item.duration || "-"),
             dateEnd: item.endDate || item.dateEnd || "Selama Aktif",
             desc: item.description || item.desc || "Tidak ada deskripsi.",
-            imageUrl: item.imageUrl || "" 
+            imageUrl: item.imageUrl || "",
+            instagramLink: item.instagramLink || item.link || "https://instagram.com/kosongin"
           };
         });
         setChallenges(mappedData);
       }
     } catch (error) {
       console.error("Gagal memuat data tantangan dari admin:", error);
+      // Fallback data jika backend tidak merespons
       setChallenges([
-        { id: 1, title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan." },
-        { id: 2, title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang. Aktifkan Impulse Shield setiap mau checkout!" },
-        { id: 3, title: "Selasa Kendalikan Emisi", tag: "Zero Waste", participants: 2100, duration: "1 Hari", dateEnd: "13 Mei 2026", desc: "Gunakan transportasi umum atau jalan kaki setiap hari Selasa untuk bumi." },
+        { id: "1", title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan.", instagramLink: "https://instagram.com" },
+        { id: "2", title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang.", instagramLink: "https://instagram.com" },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    const userSession = localStorage.getItem("user_session");
-    if (!userSession) { router.push("/login"); return; }
+  // 2. Ambil data tantangan yang sudah diikuti oleh user saat ini (Aman dari typo 'n')
+  const fetchUserJoinedChallenges = async () => {
+    const token = Cookies.get("token") || localStorage.getItem("user_session");
+    if (!token) return;
     
-    const saved = localStorage.getItem("joined_challenges");
-    if (saved) {
-      try {
-        setJoinedChallenges(JSON.parse(saved));
-      } catch (e) {
-        setJoinedChallenges([]);
+    try {
+      const meRes: any = await getChallengesMe();
+      const myData = meRes?.data?.data ?? meRes?.data ?? [];
+      if (Array.isArray(myData)) {
+        const ids = myData.map((c: any) => String(c.id ?? c.challengeId ?? c.challenge?.id)).filter(Boolean);
+        setJoinedChallenges(ids);
       }
+    } catch (err) {
+      console.warn('Failed fetching user joined challenges:', err);
     }
+  };
 
+  useEffect(() => {
     fetchAdminChallenges();
-  }, [router]);
+    fetchUserJoinedChallenges();
+  }, []);
 
-  const handleJoin = (id: any) => {
-    const normalizedId = typeof id === "number" ? id : String(id);
+  // 3. Fungsi mengikuti tantangan nyata ke rute POST /challenges/{id}/join milik Swagger
+  const handleJoin = async (id: any, instagramLink: string) => {
+    const normalizedId = String(id);
     if (joinedChallenges.includes(normalizedId)) return;
 
-    const updated = [...joinedChallenges, normalizedId];
-    setJoinedChallenges(updated);
-    localStorage.setItem("joined_challenges", JSON.stringify(updated));
-    
-    if (selectedChallenge && selectedChallenge.id === id) {
-      setSelectedChallenge({
-        ...selectedChallenge,
-        participants: selectedChallenge.participants + 1
-      });
+    try {
+      await client.post({
+        url: `/challenges/${normalizedId}/join`,
+      } as any);
+
+      const updated = [...joinedChallenges, normalizedId];
+      setJoinedChallenges(updated);
+      
+      if (selectedChallenge && String(selectedChallenge.id) === normalizedId) {
+        setSelectedChallenge({
+          ...selectedChallenge,
+          participants: selectedChallenge.participants + 1
+        });
+      }
+
+      if (instagramLink) {
+        window.open(instagramLink, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      console.error("Gagal mengirim aksi join ke server:", error);
+      alert("Gagal mengikuti tantangan, silakan coba lagi.");
     }
   };
 
   const isUserJoined = (id: any) => {
-    const targetId = typeof id === "number" ? id : String(id);
-    return joinedChallenges.includes(targetId);
+    return joinedChallenges.includes(String(id));
   };
 
   return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
-      <LoginNavbar />
-      
       <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12 animate-in fade-in duration-700">
-        <section>
+        <section id="komunitas">
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-8 h-8 text-[#06322b]" />
             <h1 className="text-4xl font-heading font-bold text-[#06322b]">Community Challenges</h1>
@@ -105,7 +125,7 @@ export default function CommunityPage() {
           </div>
         ) : (
           <>
-            {/* SECTION 1: CHALLENGE YANG KAMU IKUTI */}
+            {/* SECTION 1: CHALLENGE YANG DIIKUTI */}
             <section className="space-y-6">
               <h3 className="text-xl font-bold text-[#06322b]">Challenge yang Kamu Ikuti</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -138,9 +158,9 @@ export default function CommunityPage() {
 
       {/* MODAL DETAIL */}
       {selectedChallenge && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <Card className="w-full max-w-4xl bg-white rounded-[32px] overflow-hidden relative shadow-2xl">
-            <button onClick={() => setSelectedChallenge(null)} className="absolute right-6 top-6 text-gray-400 hover:text-black z-10">
+            <button type="button" onClick={() => setSelectedChallenge(null)} className="absolute right-6 top-6 text-gray-400 hover:text-black z-10">
               <X size={24} />
             </button>
             
@@ -151,22 +171,9 @@ export default function CommunityPage() {
                 <div className="w-full md:w-1/2 aspect-square bg-white border border-dashed border-gray-200 rounded-[16px] flex items-center justify-center text-gray-200 overflow-hidden relative">
                   {selectedChallenge.imageUrl ? (
                     <img 
-                      src={
-                        String(selectedChallenge.imageUrl).startsWith("http")
-                          ? selectedChallenge.imageUrl
-                          : `https://kosongin-backend-production.up.railway.app${selectedChallenge.imageUrl}`
-                      } 
+                      src={selectedChallenge.imageUrl.startsWith("http") ? selectedChallenge.imageUrl : `https://kosongin-backend-production.up.railway.app${selectedChallenge.imageUrl}`} 
                       alt={selectedChallenge.title}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Jika URL ganda merusak element, sembunyikan gambar hancur dan tampilkan info teks rapi
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = '<div class="flex flex-col items-center text-gray-300 gap-1"><span class="text-2xl">🖼️</span><span class="text-[11px]">Image Ready</span></div>';
-                        }
-                      }}
                     />
                   ) : (
                     <ImageIcon size={64} />
@@ -193,13 +200,18 @@ export default function CommunityPage() {
                   </div>
 
                   {isUserJoined(selectedChallenge.id) ? (
-                    <Button disabled className="w-full py-7 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 font-bold text-lg cursor-default">
-                      Berhasil Diikuti!
+                    <Button 
+                      type="button"
+                      onClick={() => window.open(selectedChallenge.instagramLink, "_blank", "noopener,noreferrer")}
+                      className="w-full py-7 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-[#06322b] font-bold text-lg transition-colors"
+                    >
+                      Dialihkan
                     </Button>
                   ) : (
                     <Button 
-                      onClick={() => handleJoin(selectedChallenge.id)}
-                      className="w-full py-7 rounded-xl bg-[#9bbab1] hover:bg-[#8aa79e] text-white font-bold text-lg border-none shadow-sm transition-transform active:scale-95"
+                      type="button"
+                      onClick={() => handleJoin(selectedChallenge.id, selectedChallenge.instagramLink)}
+                      className="w-full py-7 rounded-xl bg-[#5E8B7E] text-white font-bold text-lg border-none shadow-sm transition-transform active:scale-95"
                     >
                       Ikuti Challenge
                     </Button>
@@ -214,6 +226,7 @@ export default function CommunityPage() {
   );
 }
 
+// FORMAT SINTAKS KARTU (Aman dari patah string Tailwind CSS)
 function ChallengeCard({ data, isJoined, onClick }: any) {
   return (
     <div onClick={onClick} className="cursor-pointer group">
@@ -222,21 +235,9 @@ function ChallengeCard({ data, isJoined, onClick }: any) {
           <div className="aspect-video bg-[#F8FAFA] rounded-[24px] mb-4 flex items-center justify-center border border-gray-100 text-gray-300 overflow-hidden relative">
             {data.imageUrl ? (
               <img 
-                src={
-                  String(data.imageUrl).startsWith("http")
-                    ? data.imageUrl
-                    : `https://kosongin-backend-production.up.railway.app${data.imageUrl}`
-                } 
+                src={data.imageUrl.startsWith("http") ? data.imageUrl : `https://kosongin-backend-production.up.railway.app${data.imageUrl}`} 
                 alt={data.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = '<div class="flex flex-col items-center text-gray-300 gap-1"><span class="text-xl">🖼️</span><span class="text-[10px]">Image Ready</span></div>';
-                  }
-                }}
               />
             ) : (
               <ImageIcon className="w-10 h-10 group-hover:scale-110 transition-transform" />
@@ -260,7 +261,7 @@ function ChallengeCard({ data, isJoined, onClick }: any) {
           </div>
 
           <div className={`w-full py-3 rounded-xl font-bold text-[10px] flex items-center justify-center transition-colors ${
-            isJoined ? "bg-[#EDEAE8] text-gray-600" : "bg-[#5E8B7E] text-white hover:bg-[#486b61]"
+            isJoined ? "bg-[#EDEAE8] text-gray-600" : "bg-[#5E8B7E] text-white"
           }`}>
             {isJoined ? "Lihat detail" : "Ikuti Challenge"} <ArrowRight className="w-3.5 h-3.5 ml-2" />
           </div>
