@@ -34,17 +34,17 @@ export default function CommunityPage() {
             duration: item.durationDays ? `${item.durationDays} Hari` : (item.duration || "-"),
             dateEnd: item.endDate || item.dateEnd || "Selama Aktif",
             desc: item.description || item.desc || "Tidak ada deskripsi.",
-            imageUrl: item.imageUrl || "" 
+            imageUrl: item.imageUrl || "",
+            instagramLink: item.instagramLink || item.link || "https://instagram.com/kosongin"
           };
         });
         setChallenges(mappedData);
       }
     } catch (error) {
       console.error("Gagal memuat data tantangan dari admin:", error);
-      // Fallback dummy data jika backend mati
       setChallenges([
-        { id: "1", title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan." },
-        { id: "2", title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang." },
+        { id: "1", title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan.", instagramLink: "https://instagram.com" },
+        { id: "2", title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang.", instagramLink: "https://instagram.com" },
       ]);
     } finally {
       setIsLoading(false);
@@ -72,18 +72,32 @@ export default function CommunityPage() {
     fetchUserJoinedChallenges();
   }, []);
 
-  const handleJoin = (id: any) => {
+  const handleJoin = async (id: any, instagramLink: string) => {
     const normalizedId = String(id);
     if (joinedChallenges.includes(normalizedId)) return;
 
-    const updated = [...joinedChallenges, normalizedId];
-    setJoinedChallenges(updated);
-    
-    if (selectedChallenge && String(selectedChallenge.id) === normalizedId) {
-      setSelectedChallenge({
-        ...selectedChallenge,
-        participants: selectedChallenge.participants + 1
-      });
+    try {
+      // PERBAIKAN: Mengikuti spesifikasi API asli -> /challenges/{id}/join
+      await client.post({
+        url: `/challenges/${normalizedId}/join`,
+      } as any);
+
+      const updated = [...joinedChallenges, normalizedId];
+      setJoinedChallenges(updated);
+      
+      if (selectedChallenge && String(selectedChallenge.id) === normalizedId) {
+        setSelectedChallenge({
+          ...selectedChallenge,
+          participants: selectedChallenge.participants + 1
+        });
+      }
+
+      if (instagramLink) {
+        window.open(instagramLink, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      console.error("Gagal mengirim aksi join ke server:", error);
+      alert("Gagal mengikuti tantangan, silakan coba lagi.");
     }
   };
 
@@ -183,13 +197,17 @@ export default function CommunityPage() {
                   </div>
 
                   {isUserJoined(selectedChallenge.id) ? (
-                    <Button disabled className="w-full py-7 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 font-bold text-lg cursor-default">
-                      Berhasil Diikuti!
+                    <Button 
+                      type="button"
+                      onClick={() => window.open(selectedChallenge.instagramLink, "_blank", "noopener,noreferrer")}
+                      className="w-full py-7 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-[#06322b] font-bold text-lg transition-colors"
+                    >
+                      Dialihkan
                     </Button>
                   ) : (
                     <Button 
                       type="button"
-                      onClick={() => handleJoin(selectedChallenge.id)}
+                      onClick={() => handleJoin(selectedChallenge.id, selectedChallenge.instagramLink)}
                       className="w-full py-7 rounded-xl bg-[#5E8B7E] text-white font-bold text-lg border-none shadow-sm transition-transform active:scale-95"
                     >
                       Ikuti Challenge
@@ -205,6 +223,7 @@ export default function CommunityPage() {
   );
 }
 
+// PERBAIKAN TOTAL SINTAKS: Menutup string dan elemen JSX card agar bebas error kompilasi
 function ChallengeCard({ data, isJoined, onClick }: any) {
   return (
     <div onClick={onClick} className="cursor-pointer group">
