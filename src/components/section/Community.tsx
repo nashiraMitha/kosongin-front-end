@@ -1,131 +1,189 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
 import { client } from "@/api/client.gen";
 import { getChallengesMe } from "@/api/sdk.gen";
 import Cookies from "js-cookie";
 
-// REVISI: Tambahkan interface agar komponen mengenali prop previewOnly
-interface CommunityProps {
-  previewOnly?: boolean;
+function LocalLoginNavbar() {
+  const router = useRouter();
+  return (
+    <nav className="w-full bg-white border-b border-gray-100 px-6 md:px-12 lg:px-20 py-4 flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/")}>
+        <span className="text-xl font-heading font-bold text-[#06322b] tracking-tight">kosongin.</span>
+      </div>
+      <div className="flex items-center gap-6 text-xs font-bold text-[#06322b]">
+        <span className="cursor-pointer hover:text-[#5E8B7E] transition-colors" onClick={() => router.push("/tracking")}>Tracking</span>
+        <span className="cursor-pointer hover:text-[#5E8B7E] transition-colors" onClick={() => router.push("/shield")}>Impulse Shield</span>
+        <span className="text-[#5E8B7E] cursor-pointer border-b-2 border-[#5E8B7E] pb-1">Komunitas</span>
+      </div>
+      <button 
+        onClick={() => {
+          localStorage.clear();
+          Cookies.remove("token");
+          router.push("/login");
+        }}
+        className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors bg-red-50 px-3 py-2 rounded-xl"
+      >
+        Keluar
+      </button>
+    </nav>
+  );
 }
 
-export default function Community({ previewOnly = false }: CommunityProps) {
+export default function KomunitasPage() {
   const router = useRouter();
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [joinedIds, setJoinedIds] = useState<Array<string | number>>([]);
+  const [allChallenges, setAllChallenges] = useState<any[]>([]);
+  const [myJoinedChallenges, setMyJoinedChallenges] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        // 1. Menggunakan endpoint public sesuai dokumentasi Scalar kamu
-        const res: any = await client.get({ url: '/challenges/landing-page-challenge' } as any);
-        const data = res?.data?.data ?? res?.data ?? [];
-        const publicList = Array.isArray(data) ? data : [];
-        setChallenges(publicList);
-
-        const token = (typeof window !== 'undefined')
-          ? (localStorage.getItem('access_token') || localStorage.getItem('user_token') || Cookies.get('access_token') || Cookies.get('token'))
-          : null;
-
-        if (token) {
-          client.setConfig({ headers: { Authorization: `Bearer ${token}` } });
-          try {
-            const meRes: any = await getChallengesMe();
-            const myData = meRes?.data?.data ?? meRes?.data ?? [];
-            const ids = myData.map((c: any) => c.id ?? c.challengeId ?? c.challenge?.id).filter(Boolean);
-            setJoinedIds(ids);
-          } catch (err) {
-            console.warn('Failed fetching user joined challenges:', err);
-            setJoinedIds([]);
-          }
-        } else {
-          setJoinedIds([]);
-        }
-      } catch (error) {
-        console.error('Failed fetch public challenges:', error);
-        setChallenges([]);
+  const fetchCommunityData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 🔥 FIX SINKRONISASI TOKEN: Sesuaikan dengan key token halaman tracking/shield kelompokmu
+      const token = Cookies.get("token") || localStorage.getItem("user_session") || localStorage.getItem("access_token");
+      if (token) {
+        client.setConfig({ headers: { Authorization: `Bearer ${token}` } });
       }
-    };
 
-    fetchChallenges();
-  }, []);
+      // 1. Ambil Semua Tantangan Global
+      const resAll: any = await client.get({ url: '/challenges' } as any);
+      // Amankan pembacaan data jika nested di resAll.data.data.data atau resAll.data
+      const dataAll = resAll?.data?.data?.data ?? resAll?.data?.data ?? resAll?.data ?? [];
+      const listAll = Array.isArray(dataAll) ? dataAll : [];
 
-  const handleCardClick = (item: any) => {
-    router.push('/login');
+      // 2. Ambil Tantangan yang Sedang Diikuti User Aktif
+      let listJoined: any[] = [];
+      try {
+        const resMe: any = await getChallengesMe();
+        listJoined = resMe?.data?.data?.data ?? resMe?.data?.data ?? resMe?.data ?? [];
+      } catch (err) {
+        console.warn("Belum ada tantangan yang diikuti:", err);
+      }
+
+      const safeAll = Array.isArray(listAll) ? listAll : [];
+      const safeJoined = Array.isArray(listJoined) ? listJoined : [];
+
+      // Ekstrak ID tantangan yang sudah diikuti agar tidak duplikat di bawah
+      const joinedIds = safeJoined.map((c: any) => {
+        const idTarget = c.id ?? c.challengeId ?? c.challenge?.id ?? c.challenge?._id;
+        return idTarget ? String(idTarget) : null;
+      }).filter(Boolean);
+
+      // Filter tantangan yang tersedia (belum diikuti)
+      const availableChallenges = safeAll.filter((c: any) => {
+        const id = String(c.id || c._id || c.challengeId);
+        return !joinedIds.includes(id);
+      });
+
+      setMyJoinedChallenges(safeJoined);
+      setAllChallenges(availableChallenges);
+    } catch (error) {
+      console.error("Gagal memuat dashboard data komunitas:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleJoinClick = (e: React.MouseEvent, item: any) => {
-    e.stopPropagation();
-    router.push('/login');
+  useEffect(() => {
+    const userSession = localStorage.getItem("user_session");
+    if (!userSession) {
+      router.replace("/login");
+      return;
+    }
+    fetchCommunityData();
+  }, [router]);
+
+  const handleJoinChallenge = async (challengeId: any) => {
+    try {
+      await client.post({ url: `/challenges/${challengeId}/join` } as any);
+      alert("Berhasil mengikuti challenge baru! Tetap disiplin ya.");
+      await fetchCommunityData();
+    } catch (err) {
+      console.error("Gagal mengikuti challenge:", err);
+      alert("Gagal mengikuti tantangan.");
+    }
   };
 
   return (
-    <section id="komunitas" className="py-16 md:py-24 bg-[#f5f5f3]">
-      <div className="px-4 md:px-16 lg:px-24">
-        <h2 className="text-2xl md:text-4xl font-bold mb-10 md:mb-16">
-          {previewOnly ? "Community Preview" : "Challenge yang bisa kamu mulai hari ini"}
-        </h2>
+    <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
+      <LocalLoginNavbar />
 
-        <div className="flex gap-5 md:gap-8 overflow-x-auto pb-4 scroll-smooth [&::-webkit-scrollbar]:hidden">
-          {challenges.map((item, i) => {
-            const id = item.id ?? item._id ?? item.challengeId ?? i;
-            const joined = joinedIds.includes(id) || joinedIds.includes(String(id)) || joinedIds.includes(Number(id));
-            return (
-              <div
-                key={id}
-                onClick={() => handleCardClick(item)}
-                className="bg-white rounded-2xl md:rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition w-[clamp(220px,28vw,340px)] flex-shrink-0 flex flex-col cursor-pointer"
-              >
-                <div className="w-full aspect-square relative overflow-hidden">
-                  <Image
-                    src={
-                      item.imageUrl
-                        ? item.imageUrl.startsWith("http")
-                          ? item.imageUrl
-                          : `https://kosongin-backend-production.up.railway.app${item.imageUrl}`
-                        : "/community.png"
-                    }
-                    alt={item.title || 'Challenge'}
-                    width={600}
-                    height={600}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+      <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12">
+        <section>
+          <h1 className="text-4xl font-heading font-bold text-[#06322b]">Community Challenges</h1>
+          <p className="text-gray-500 mt-1">Tantangan kolektif untuk konsumsi yang lebih bertanggung jawab.</p>
+        </section>
 
-                <div className="p-3 md:p-5 flex flex-col flex-1">
-                  <span className="inline-block border border-[#568F87] text-[#568F87] px-3 py-1 rounded-full text-[10px] md:text-sm w-fit">
-                    {item.challengesCategory || item.category || 'General'}
-                  </span>
-
-                  <h3 className="mt-3 md:mt-5 text-base md:text-lg font-bold h-[60px] md:h-[70px] line-clamp-2">{item.title}</h3>
-
-                  <p className="text-xs md:text-[12px] text-gray-500 mt-3 leading-relaxed h-[60px] md:h-[70px] line-clamp-3">{item.description}</p>
-
-                  <div className="mt-auto pt-5 md:pt-8">
-                    <div className="flex items-center gap-2 text-xs md:text-[12px] text-black mb-3 md:mb-4">
-                      <span>{item.durationDays ?? item.duration ?? '-'} hari</span>
+        {/* --- BAGIAN 1: CHALLENGE YANG KAMU IKUTI --- */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold text-[#06322b]">Challenge yang Kamu Ikuti</h3>
+          {isLoading ? (
+            <p className="text-sm text-gray-400 italic">Memuat tantanganmu...</p>
+          ) : myJoinedChallenges.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myJoinedChallenges.map((item: any, idx: number) => {
+                const c = item.challenge || item;
+                return (
+                  <Card key={item.id || item._id || idx} className="p-5 border border-gray-100 bg-white rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div>
+                      <span className="inline-block bg-[#EEF4F3] text-[#5E8B7E] font-bold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider mb-3">
+                        {c.challengesCategory || c.category || "General"}
+                      </span>
+                      <h4 className="font-bold text-[#06322b] text-base mb-1.5">{c.title || "Tantangan Kosong"}</h4>
+                      <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">"{c.description || "-"}"</p>
                     </div>
-
-                    <div className="flex justify-start">
-                      <button
-                        type="button"
-                        onClick={(e) => handleJoinClick(e, item)}
-                        className={`w-fit font-semibold px-4 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-[12px] transition active:scale-95 ${joined ? 'bg-gray-200 text-gray-600 cursor-default' : 'bg-[#90BAB7] hover:bg-[#4a7a73] text-white'}`}
-                        disabled={joined}
-                      >
-                        <span className="font-bold">{joined ? 'Sudah Ikut' : 'Ikuti Challenge'}</span>
-                      </button>
+                    <div className="flex justify-between items-center border-t border-gray-50 pt-3 mt-2">
+                      <span className="text-xs font-bold text-gray-400">{c.durationDays || c.duration || 3} Hari</span>
+                      <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">Aktif Berjalan</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-400 italic text-xs py-2">Belum ada tantangan aktif yang kamu ikuti.</p>
+          )}
         </div>
-      </div>
-    </section>
+
+        {/* --- BAGIAN 2: SEMUA CHALLENGE AKTIF (YANG BELUM DIIKUTI) --- */}
+        <div className="space-y-4 pt-4">
+          <h3 className="text-xl font-bold text-[#06322b]">Semua Challenge Aktif</h3>
+          {isLoading ? (
+            <p className="text-sm text-gray-400 italic">Memuat semua daftar tantangan...</p>
+          ) : allChallenges.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {allChallenges.map((item: any, idx: number) => (
+                <Card key={item.id || item._id || idx} className="p-5 border border-gray-200/50 bg-white rounded-2xl shadow-sm flex flex-col justify-between hover:border-[#5E8B7E]/40 transition-all">
+                  <div>
+                    <span className="inline-block border border-[#5E8B7E] text-[#5E8B7E] font-bold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider mb-3">
+                      {item.challengesCategory || item.category || "General"}
+                    </span>
+                    <h4 className="font-bold text-[#06322b] text-base mb-1.5">{item.title}</h4>
+                    <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mb-4">{item.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-gray-50 pt-3 mt-2">
+                    <span className="text-xs font-bold text-gray-400">{item.durationDays || item.duration || 3} Hari</span>
+                    <button
+                      type="button"
+                      onClick={() => handleJoinChallenge(item.id || item._id || item.challengeId)}
+                      className="text-xs font-bold bg-[#5E8B7E] hover:bg-[#4d7268] text-white px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm"
+                    >
+                      Ikuti Challenge
+                    </button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 italic text-xs py-2">Semua tantangan dari admin telah kamu ikuti!</p>
+          )}
+        </div>
+
+      </main>
+    </div>
   );
 }

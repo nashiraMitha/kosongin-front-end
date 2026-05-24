@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import LoginNavbar from "@/components/section/LoginNavbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, ArrowRight, ImageIcon, Trophy, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { client } from "@/api/client.gen"; 
 import { getChallengesMe } from "@/api/sdk.gen";
 import Cookies from "js-cookie";
@@ -17,12 +17,17 @@ export default function CommunityPage() {
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Ambil data tantangan dari Admin Backend
+  // 1. Ambil data tantangan aktif dari Admin Backend
   const fetchAdminChallenges = async () => {
     try {
       setIsLoading(true);
+      const token = Cookies.get("token") || localStorage.getItem("user_session");
+      if (token) {
+        client.setConfig({ headers: { Authorization: `Bearer ${token}` } });
+      }
+
       const res: any = await client.get({ url: '/challenges' } as any);
-      const data = res?.data?.data ?? res?.data ?? [];
+      const data = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
       
       if (Array.isArray(data)) {
         const mappedData = data.map((item: any, index: number) => {
@@ -43,26 +48,26 @@ export default function CommunityPage() {
       }
     } catch (error) {
       console.error("Gagal memuat data tantangan dari admin:", error);
-      // Fallback data jika backend tidak merespons
+      // Fallback aman data simulasi
       setChallenges([
-        { id: "1", title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan.", instagramLink: "https://instagram.com" },
-        { id: "2", title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang.", instagramLink: "https://instagram.com" },
+        { id: "1", title: "Zero Plastic Weekend", tag: "Zero Waste", participants: 1240, duration: "2 Hari", dateEnd: "13 Mei 2026", desc: "Tantangan kolektif untuk tidak menggunakan plastik sekali pakai selama akhir pekan.", instagramLink: "https://instagram.com/kosongin" },
+        { id: "2", title: "Belanja Sadar", tag: "No Impulse", participants: 856, duration: "7 Hari", dateEnd: "13 Mei 2026", desc: "7 hari penuh tanpa klik 'Beli Sekarang' tanpa pikir panjang.", instagramLink: "https://instagram.com/kosongin" },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 2. Ambil data tantangan yang sudah diikuti oleh user saat ini (Aman dari typo 'n')
+  // 2. Ambil data tantangan yang sudah diikuti oleh user aktif
   const fetchUserJoinedChallenges = async () => {
     const token = Cookies.get("token") || localStorage.getItem("user_session");
     if (!token) return;
     
     try {
       const meRes: any = await getChallengesMe();
-      const myData = meRes?.data?.data ?? meRes?.data ?? [];
+      const myData = meRes?.data?.data?.data ?? meRes?.data?.data ?? meRes?.data ?? [];
       if (Array.isArray(myData)) {
-        const ids = myData.map((c: any) => String(c.id ?? c.challengeId ?? c.challenge?.id)).filter(Boolean);
+        const ids = myData.map((c: any) => String(c.id ?? c.challengeId ?? c.challenge?.id ?? c.challenge?._id)).filter(Boolean);
         setJoinedChallenges(ids);
       }
     } catch (err) {
@@ -71,11 +76,16 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
+    const userSession = localStorage.getItem("user_session");
+    if (!userSession) {
+      router.replace("/login");
+      return;
+    }
     fetchAdminChallenges();
     fetchUserJoinedChallenges();
-  }, []);
+  }, [router]);
 
-  // 3. Fungsi mengikuti tantangan nyata ke rute POST /challenges/{id}/join milik Swagger
+  // 3. Fungsi mengikuti tantangan nyata ke database API
   const handleJoin = async (id: any, instagramLink: string) => {
     const normalizedId = String(id);
     if (joinedChallenges.includes(normalizedId)) return;
@@ -109,8 +119,12 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
-      <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20 relative">
+      {/* Navbar Utama Asli Kelompok */}
+      <LoginNavbar />
+
+      {/* Konten Utama */}
+      <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12">
         <section id="komunitas">
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-8 h-8 text-[#06322b]" />
@@ -156,7 +170,7 @@ export default function CommunityPage() {
         )}
       </main>
 
-      {/* MODAL DETAIL */}
+      {/* MODAL EXPAND DETAIL */}
       {selectedChallenge && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <Card className="w-full max-w-4xl bg-white rounded-[32px] overflow-hidden relative shadow-2xl">
@@ -205,7 +219,7 @@ export default function CommunityPage() {
                       onClick={() => window.open(selectedChallenge.instagramLink, "_blank", "noopener,noreferrer")}
                       className="w-full py-7 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-[#06322b] font-bold text-lg transition-colors"
                     >
-                      Dialihkan
+                      Buka tautan Instagram
                     </Button>
                   ) : (
                     <Button 
@@ -226,7 +240,6 @@ export default function CommunityPage() {
   );
 }
 
-// FORMAT SINTAKS KARTU (Aman dari patah string Tailwind CSS)
 function ChallengeCard({ data, isJoined, onClick }: any) {
   return (
     <div onClick={onClick} className="cursor-pointer group">
