@@ -27,6 +27,10 @@ export default function UserSection() {
   const [search, setSearch] =
     useState("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [meta, setMeta] = useState<any>(null);
+  const limit = 10;
+
   // MODAL DELETE STATE
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -34,15 +38,12 @@ export default function UserSection() {
 
   /* FETCH USERS */
   useEffect(() => {
+    fetchUsers(currentPage, search);
+  }, [currentPage, search]);
 
-    fetchUsers();
-
-  }, []);
-
-  const fetchUsers = async () => {
-
+  const fetchUsers = async (page = currentPage, searchQuery = search) => {
+    setLoading(true);
     try {
-
       /* TOKEN */
       const token =
         Cookies.get(
@@ -57,11 +58,19 @@ export default function UserSection() {
             Authorization:
               `Bearer ${token}`,
           },
+          query: {
+            page,
+            limit,
+            search: searchQuery,
+          }
         });
 
-      setUsers(
-        res.data?.data?.data || []
-      );
+      if (res.data?.success) {
+        setUsers(res.data.data?.data || []);
+        setMeta(res.data.data?.meta || null);
+      } else {
+        throw new Error(res.data?.message || "Gagal mengambil data");
+      }
 
     } catch (err: any) {
       console.log(err);
@@ -99,7 +108,7 @@ export default function UserSection() {
         // Success
         setIsModalOpen(false);
         setSelectedUser(null);
-        fetchUsers(); // Refresh list
+        fetchUsers(); // Refresh current page
       } else {
         // Jika bukan JSON (kemungkinan 404 HTML atau error server)
         const text = await response.text();
@@ -114,27 +123,6 @@ export default function UserSection() {
       setIsDeleting(false);
     }
   };
-
-  const filteredUsers =
-    users.filter((user) => {
-
-      const keyword =
-        search.toLowerCase();
-
-      return (
-        user.fullName
-          ?.toLowerCase()
-          .includes(keyword) ||
-
-        user.nickName
-          ?.toLowerCase()
-          .includes(keyword) ||
-
-        user.email
-          ?.toLowerCase()
-          .includes(keyword)
-      );
-    });
 
   /* LOADING */
   if (loading) {
@@ -181,7 +169,7 @@ export default function UserSection() {
       </div>
 
       <p className="text-black mb-4">
-        Total Users: {users.length}
+        Total Users: {meta?.total || 0}
       </p>
 
       {/* SEARCH + EXPORT */}
@@ -213,11 +201,10 @@ export default function UserSection() {
 
               value={search}
 
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
 
               placeholder="
                 Cari nama atau email pengguna...
@@ -361,37 +348,6 @@ export default function UserSection() {
 
             {Array.isArray(users) &&
               users
-                .filter((user) => {
-
-                  const keyword =
-                    search.toLowerCase();
-
-                  return (
-
-                    user.fullName
-                      ?.toLowerCase()
-                      .includes(keyword)
-
-                    ||
-
-                    user.name
-                      ?.toLowerCase()
-                      .includes(keyword)
-
-                    ||
-
-                    user.email
-                      ?.toLowerCase()
-                      .includes(keyword)
-
-                    ||
-
-                    user.nickname
-                      ?.toLowerCase()
-                      .includes(keyword)
-                  );
-                })
-
                 .map((user) => (
 
                 <tr
@@ -483,6 +439,64 @@ export default function UserSection() {
           </table>
 
       </div>
+
+      {/* PAGINATION */}
+      {meta && meta.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 px-2">
+          <p className="text-sm text-[#032119] font-medium">
+            Menampilkan <span className="font-bold">{users.length}</span> dari <span className="font-bold">{meta.total}</span> pengguna
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1 || loading}
+              className="px-4 py-2 rounded-xl border border-[#D7E5E3] bg-white text-[#032119] font-bold text-sm hover:bg-[#F3F7F6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Sebelumnya
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {[...Array(meta.totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                // Show only current page, 1, last page, and neighbors
+                if (
+                  pageNum === 1 ||
+                  pageNum === meta.totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
+                        currentPage === pageNum
+                          ? "bg-[#74A9A5] text-white"
+                          : "bg-white border border-[#D7E5E3] text-[#032119] hover:bg-[#F3F7F6]"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
+                  return <span key={pageNum} className="px-1 text-gray-400">...</span>;
+                }
+                return null;
+              })}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
+              disabled={currentPage === meta.totalPages || loading}
+              className="px-4 py-2 rounded-xl border border-[#D7E5E3] bg-white text-[#032119] font-bold text-sm hover:bg-[#F3F7F6] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DELETE CONFIRMATION MODAL */}
       {isModalOpen && (
