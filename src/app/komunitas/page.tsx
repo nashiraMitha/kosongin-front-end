@@ -16,6 +16,31 @@ export default function CommunityPage() {
   const [joinedChallenges, setJoinedChallenges] = useState<any[]>([]); 
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [landingPreviews, setLandingPreviews] = useState<any[]>([]);
+
+  // fetch landing-page previews set by admin
+  const fetchLandingPreviews = async () => {
+    try {
+      const res: any = await client.get({ url: '/challenges/landing-page-challenge' } as any);
+      const data = res?.data?.data ?? res?.data ?? [];
+      if (Array.isArray(data)) {
+        const mapped = data.map((item: any, index: number) => ({
+          id: String(item.id ?? item._id ?? index),
+          title: item.title || 'Untitled',
+          tag: item.challengesCategory || item.category || 'General',
+          participants: item.participantsCount ?? item.participants ?? 0,
+          duration: item.durationDays ? `${item.durationDays} Hari` : (item.duration || '-'),
+          dateEnd: item.endDate || item.dateEnd || 'Selama Aktif',
+          desc: item.description || item.desc || 'Tidak ada deskripsi.',
+          imageUrl: item.imageUrl || ''
+        }));
+        setLandingPreviews(mapped);
+      }
+    } catch (e) {
+      console.warn('Failed fetch landing previews', e);
+      setLandingPreviews([]);
+    }
+  };
 
   // 1. Ambil data tantangan dari Admin Backend
   const fetchAdminChallenges = async () => {
@@ -73,6 +98,7 @@ export default function CommunityPage() {
   useEffect(() => {
     fetchAdminChallenges();
     fetchUserJoinedChallenges();
+    fetchLandingPreviews();
   }, []);
 
   // 3. Fungsi mengikuti tantangan nyata ke rute POST /challenges/{id}/join milik Swagger
@@ -126,6 +152,31 @@ export default function CommunityPage() {
           </div>
         ) : (
           <>
+            {/* PREVIEW DARI ADMIN (Landing previews) */}
+            {landingPreviews.length > 0 && (
+              <section className="space-y-6">
+                <h3 className="text-xl font-bold text-[#06322b]">Preview dari Admin</h3>
+                <div className="flex gap-5 md:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden">
+                  {landingPreviews.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl md:rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition w-[clamp(220px,28vw,340px)] flex-shrink-0 flex flex-col cursor-pointer">
+                      <div className="w-full aspect-square relative overflow-hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl.startsWith('http') ? item.imageUrl : `https://kosongin-backend-production.up.railway.app${item.imageUrl}`} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100" />
+                        )}
+                      </div>
+                      <div className="p-3 md:p-5 flex flex-col flex-1">
+                        <span className="inline-block border border-[#568F87] text-[#568F87] px-3 py-1 rounded-full text-[10px] md:text-sm w-fit">{item.tag}</span>
+                        <h3 className="mt-3 md:mt-5 text-base md:text-lg font-bold h-[60px] md:h-[70px] line-clamp-2">{item.title}</h3>
+                        <p className="text-xs md:text-[12px] text-gray-500 mt-3 leading-relaxed h-[60px] md:h-[70px] line-clamp-3">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* SECTION 1: CHALLENGE YANG DIIKUTI */}
             <section className="space-y-6">
               <h3 className="text-xl font-bold text-[#06322b]">Challenge yang Kamu Ikuti</h3>

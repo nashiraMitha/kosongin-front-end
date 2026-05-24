@@ -82,14 +82,17 @@ export default function LoginPage() {
           localStorage.setItem("refreshToken", data.data.refreshToken);
         }
 
-        // Save user display name if returned by API; fallback to email/nickname
+        // Save user display name and email if returned by API; fallback to email/nickname
         try {
           const loginData = data.data as any;
           const returnedUser = loginData?.user ?? loginData?.userData ?? null;
           const displayName = returnedUser?.fullname || returnedUser?.nickname || email || "User";
+          const returnedEmail = returnedUser?.email || email || "";
           localStorage.setItem("user_name", displayName);
+          if (returnedEmail) localStorage.setItem("user_email", returnedEmail);
         } catch (e) {
           localStorage.setItem("user_name", email || "User");
+          localStorage.setItem("user_email", email || "");
         }
           
         // Cek jika admin (berdasarkan email dummy atau role dari token jika tersedia)
