@@ -6,11 +6,7 @@ import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Plus, ShieldCheck, ClipboardList, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
 import { getConsumptionLogs, getWishlist, getChallengesMe, getDashboardInsight, getProfile } from "@/api";
-=======
-import { getConsumptionLogs, getWishlist, getDashboardInsight, getProfile } from "@/api";
->>>>>>> 30b3e28 (landing page fix)
 import { client } from "@/lib/api-client";
 
 export default function DashboardPage() {
@@ -69,68 +65,12 @@ export default function DashboardPage() {
       router.replace("/login");
       return;
     }
-<<<<<<< HEAD
-
-    setUserName(localStorage.getItem("user_name") || "User");
-    
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Parallel fetching for performance
-        const [consRes, wishRes, insightRes, profileRes] = await Promise.all([
-          getConsumptionLogs({ client }),
-          getWishlist({ client }),
-          getDashboardInsight({ client }),
-          getProfile({ client })
-        ]);
-
-        if (profileRes.data?.success && profileRes.data?.data) {
-          const fetchedName = profileRes.data.data.nickName || profileRes.data.data.fullName || "User";
-          setUserName(fetchedName);
-          localStorage.setItem("user_name", fetchedName);
-        }
-
-        if (consRes.data?.success) {
-          setConsumptionData(consRes.data.data || []);
-        }
-
-        const wishData = wishRes.data;
-        if (wishData?.success) {
-          const rawData = wishData?.data || [];
-          const activeWishlist = rawData.filter(
-            (item: any) => item.whislistStatus === "waiting"
-          );
-          setShieldData(activeWishlist);
-        }
-
-        if (insightRes.data?.success) {
-          setInsightData(insightRes.data.data);
-        }
-
-      } catch (err) {
-        console.error("Gagal memuat data dashboard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-=======
->>>>>>> 30b3e28 (landing page fix)
     fetchData();
-
-    // Listen for shield updates triggered from Shield page to refresh dashboard live
-    const onShieldUpdated = () => { fetchData(); };
-    window.addEventListener('shield-updated', onShieldUpdated);
-    return () => window.removeEventListener('shield-updated', onShieldUpdated);
   }, [router]);
 
-<<<<<<< HEAD
-  const totalExpense = consumptionData.reduce((acc: number, curr: any) => acc + Number(curr.amount || 0), 0);
-=======
   const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || curr.price || 0), 0);
 
-  // --- LOGIKA HITUNG TREN MINGGUAN DINAMIS AGAR GRAFIK MUNCUL ---
+  // --- LOGIKA HITUNG TREN MINGGUAN DINAMIS ---
   const getWeekNumber = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -160,7 +100,6 @@ export default function DashboardPage() {
       total: weeklySummary[key] || 0
     });
   }
->>>>>>> 30b3e28 (landing page fix)
 
   if (loading) return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
@@ -185,6 +124,7 @@ export default function DashboardPage() {
             <p className="text-gray-400 mt-1">Ini ringkasan perjalanan hematmu hari ini.</p>
           </div>
           <button 
+            type="button"
             onClick={() => router.push("/tracking")}
             className="bg-[#5E8B7E] hover:bg-[#4d7268] text-white font-bold rounded-2xl px-6 py-4 flex items-center gap-2 border-none shadow-sm transition-transform active:scale-95"
           >
@@ -200,7 +140,7 @@ export default function DashboardPage() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 p-8 rounded-[32px] border border-gray-200/60 shadow-sm bg-white">
+          <Card className="p-8 rounded-[32px] border border-gray-200/60 shadow-sm bg-white lg:col-span-2">
             <h3 className="font-bold text-[#06322b] mb-8 flex items-center gap-2 text-lg">
               <Target className="w-5 h-5 text-[#5E8B7E]" /> Tren Konsumsi (4 Minggu Terakhir)
             </h3>
@@ -224,20 +164,11 @@ export default function DashboardPage() {
               <h3 className="font-bold text-[#06322b] text-lg flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-[#5E8B7E]" /> Waiting List
               </h3>
-              <button onClick={() => router.push("/shield")} className="text-[10px] font-bold text-[#5E8B7E] uppercase hover:underline">Lihat Semua</button>
+              <button type="button" onClick={() => router.push("/shield")} className="text-[10px] font-bold text-[#5E8B7E] uppercase hover:underline">Lihat Semua</button>
             </div>
             <div className="space-y-4">
               {shieldData.length > 0 ? (
                 shieldData.slice(0, 3).map((item: any, idx: number) => (
-<<<<<<< HEAD
-                  <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-50 group hover:border-[#5E8B7E] transition-all">
-                    <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName}</p>
-                                      <div className="flex justify-between items-center mt-1">
-                                        <p className="text-[10px] text-gray-400">Rp {Number(item.estimatePrice).toLocaleString('id-ID')}</p>
-                                        <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.waitingDays} Hari</span>
-                                      </div>
-                                    </div>
-=======
                   <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-100/50 flex flex-col justify-between group hover:border-[#5E8B7E]/40 transition-all">
                     <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName || item.name}</p>
                     <div className="flex justify-between items-center mt-2">
@@ -245,7 +176,6 @@ export default function DashboardPage() {
                       <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{item.waitingDays || 3} Hari</span>
                     </div>
                   </div>
->>>>>>> 30b3e28 (landing page fix)
                 ))
               ) : (
                 <div className="py-14 text-center">
