@@ -11,7 +11,6 @@ import { client } from "@/api/client.gen";
 
 import {
   getAdminChallenges,
-  postAdminChallenges,
   postUploadSignature,
 } from "@/api/sdk.gen";
 
@@ -19,6 +18,7 @@ export default function
 ChallengeSection({
 
   challenge,
+  onSuccess,
 
 }: any){
 
@@ -35,6 +35,7 @@ ChallengeSection({
     useState({
       title: "",
       description: "",
+      sourceUrl: "",
       category: "",
       duration: "",
       startDate: "",
@@ -61,6 +62,9 @@ ChallengeSection({
 
           description:
             challenge.description || "",
+
+          sourceUrl:
+            challenge.sourceUrl || "",
 
           category:
             challenge.challengesCategory || "",
@@ -448,6 +452,9 @@ ChallengeSection({
       fullDescription:
         form.description,
 
+      sourceUrl:
+        form.sourceUrl,
+
       rules:
         "Ikuti challenge",
 
@@ -493,6 +500,8 @@ ChallengeSection({
     },
   });
 
+  onSuccess?.();
+
 } else {
 
   await client.post({
@@ -515,6 +524,9 @@ ChallengeSection({
 
       fullDescription:
         form.description,
+
+      sourceUrl:
+        form.sourceUrl,
 
       rules:
         "Ikuti challenge",
@@ -566,6 +578,7 @@ ChallengeSection({
       setForm({
         title: "",
         description: "",
+        sourceUrl: "",
         category: "",
         duration: "",
         startDate: "",
@@ -729,6 +742,28 @@ ChallengeSection({
             </p>
 
           )}
+
+        </div>
+
+        {/* SOURCE URL */}
+        <div className="space-y-2">
+
+          <label className="text-sm font-bold text-[#032119]">
+            Source URL
+          </label>
+
+          <input
+            type="text"
+            placeholder="https://example.com"
+            value={form.sourceUrl}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                sourceUrl: e.target.value,
+              })
+            }
+            className="w-full border border-[#6E8B88] rounded-xl px-4 py-3 outline-none focus:border-[#6B9080]"
+          />
 
         </div>
 

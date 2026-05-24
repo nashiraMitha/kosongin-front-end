@@ -347,10 +347,8 @@ export default function ActiveChallengeSection() {
 
                         <ChallengeSection
 
-                          challenge={
-                            selectedChallenge
-                          }
-
+                          challenge={selectedChallenge}
+                          onSuccess={fetchChallenges}
                         />
 
                       </div>
