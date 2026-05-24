@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Plus, ShieldCheck, ClipboardList, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getConsumptionLogs, getWishlist, getChallengesMe, getDashboardInsight, getProfile } from "@/api";
+import { getConsumptionLogs, getWishlist, getDashboardInsight, getProfile } from "@/api";
 import { client } from "@/lib/api-client";
 
 export default function DashboardPage() {
@@ -30,7 +30,7 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         
-        // Parallel fetching for performance
+        // Parallel fetching untuk mengamankan performa data real-time
         const [consRes, wishRes, insightRes, profileRes] = await Promise.all([
           getConsumptionLogs({ client }),
           getWishlist({ client }),
@@ -48,12 +48,16 @@ export default function DashboardPage() {
           setConsumptionData(consRes.data.data || []);
         }
 
-        const wishData = wishRes.data;
-        if (wishData?.success) {
+        const wishData = wishRes.data ?? (wishRes as any);
+        if (wishData?.success || wishData?.data) {
           const rawData = wishData?.data || [];
-          const activeWishlist = rawData.filter(
-            (item: any) => item.whislistStatus === "waiting"
-          );
+          
+          // SINKRONISASI COCOK: Memperbaiki typo whislistStatus dan fallback status lowercase
+          const activeWishlist = rawData.filter((item: any) => {
+            const statusStr = (item.wishlistStatus || item.status || "").toString().toLowerCase();
+            return statusStr === "waiting";
+          });
+          
           setShieldData(activeWishlist);
         }
 
@@ -71,7 +75,7 @@ export default function DashboardPage() {
     fetchData();
   }, [router]);
 
-  const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || curr.price || 0), 0);
 
   if (loading) return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
@@ -111,7 +115,7 @@ export default function DashboardPage() {
               onClick={() => router.push("/tracking")}
               className="bg-[#9bbab1] hover:bg-[#8aa79e] text-white font-bold px-12 py-5 rounded-[20px] text-lg border-none transition-all hover:scale-105 shadow-lg shadow-teal-900/10"
             >
-              Catat Konsumsi Pertama
+              Catat Proyek Pertama
             </button>
           </Card>
         </main>
@@ -119,7 +123,7 @@ export default function DashboardPage() {
     );
   }
 
-  // --- VIEW: NORMAL DASHBOARD (Jika ada data) ---
+  // --- VIEW: NORMAL DASHBOARD ---
   return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
       <LoginNavbar />
@@ -131,7 +135,7 @@ export default function DashboardPage() {
           </div>
           <button 
             onClick={() => router.push("/tracking")}
-            className="bg-[#5E8B7E] hover:bg-[#4d7268] text-white font-bold rounded-2xl px-6 py-4 flex items-center gap-2 border-none"
+            className="bg-[#5E8B7E] hover:bg-[#4d7268] text-white font-bold rounded-2xl px-6 py-4 flex items-center gap-2 border-none transition-transform active:scale-95"
           >
             <Plus className="w-5 h-5" /> Catat Pengeluaran
           </button>
@@ -139,13 +143,13 @@ export default function DashboardPage() {
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Belanja" value={`Rp ${totalExpense.toLocaleString('id-ID')}`} sub="Periode ini" color="bg-pink-50" />
-          <StatCard title="Impulse Shield" value={(insightData?.wishlist_count || 0).toString()} sub="Item ditunda" color="bg-teal-50" />
+          <StatCard title="Impulse Shield" value={(insightData?.wishlist_count || shieldData.length || 0).toString()} sub="Item ditunda" color="bg-teal-50" />
           <StatCard title="Challenge" value={(insightData?.active_challenge || 0).toString()} sub="Sedang diikuti" color="bg-blue-50" />
           <StatCard title="Streak" value={(insightData?.streak || 0).toString()} sub="Hari berturut-turut" color="bg-orange-50" />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 p-8 rounded-[32px] border-gray-100 shadow-sm bg-white">
+          <Card className="lg:col-span-2 p-8 rounded-[32px] border border-gray-100 shadow-sm bg-white">
             <h3 className="font-bold text-[#06322b] mb-8 flex items-center gap-2 text-lg">
               <Target className="w-5 h-5 text-[#5E8B7E]" /> Tren Konsumsi (4 Minggu Terakhir)
             </h3>
@@ -166,32 +170,32 @@ export default function DashboardPage() {
                       'Total Konsumsi'
                     ]}
                   />
-                  <Bar dataKey="total" fill="#9bbab1" radius={[8, 8, 8, 8]} barSize={60} />
+                  <Bar dataKey="total" fill="#9bbab1" radius={[8, 8, 8, 8]} barSize={50} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
 
-          <Card className="p-8 rounded-[32px] border-gray-100 shadow-sm bg-white border-t-4 border-t-[#5E8B7E]">
+          <Card className="p-8 rounded-[32px] border border-gray-100 shadow-sm bg-white border-t-4 border-t-[#5E8B7E]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-[#06322b] text-lg flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5" /> Waiting List
+                <ShieldCheck className="w-5 h-5 text-[#5E8B7E]" /> Waiting List
               </h3>
               <button onClick={() => router.push("/shield")} className="text-[10px] font-bold text-[#5E8B7E] uppercase hover:underline">Lihat Semua</button>
             </div>
             <div className="space-y-4">
               {shieldData.length > 0 ? (
                 shieldData.slice(0, 3).map((item, idx) => (
-                  <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-50 group hover:border-[#5E8B7E] transition-all">
-                    <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName}</p>
-                                      <div className="flex justify-between items-center mt-1">
-                                        <p className="text-[10px] text-gray-400">Rp {Number(item.estimatePrice).toLocaleString('id-ID')}</p>
-                                        <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{item.waitingDays} Hari</span>
-                                      </div>
-                                    </div>
+                  <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-100 flex flex-col justify-between group hover:border-[#5E8B7E] transition-all">
+                    <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName || item.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-[10px] text-gray-400">Rp {Number(item.estimatePrice || item.price || 0).toLocaleString('id-ID')}</p>
+                      <span className="text-[9px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{(item.waitingDays || 3)} Hari</span>
+                    </div>
+                  </div>
                 ))
               ) : (
-                <div className="py-10 text-center">
+                <div className="py-14 text-center">
                   <ClipboardList className="w-8 h-8 text-gray-200 mx-auto mb-2" />
                   <p className="text-xs text-gray-400 italic">Belum ada barang ditunda.</p>
                 </div>
@@ -204,7 +208,6 @@ export default function DashboardPage() {
   );
 }
 
-// Helper Components
 function StatCard({ title, value, sub, color }: any) {
   return (
     <Card className={`p-6 rounded-[28px] border-none shadow-sm ${color}`}>

@@ -27,13 +27,19 @@ export default function ProfileDropdown() {
 
   return (
     <Card className="w-[300px] p-6 bg-[#FFFCF9] rounded-[24px] shadow-2xl border-none absolute right-0 mt-3 z-50 animate-in fade-in zoom-in duration-200">
-      {/* Profil Header Tanpa Foto */}
+      {/* Profil Header + Link Mailto Aktif */}
       <div className="flex flex-col mb-4">
         <h4 className="font-bold text-[#1A3C34] text-xl leading-tight truncate">
           {userName}
         </h4>
         <p className="text-[11px] text-gray-500 truncate mt-1">
-          @{displayUsername} · {userEmail}
+          @{displayUsername} ·{" "}
+          <a 
+            href={`mailto:${userEmail}`} 
+            className="text-[#5E8B7E] hover:underline font-medium transition-all"
+          >
+            {userEmail}
+          </a>
         </p>
       </div>
 
@@ -46,6 +52,7 @@ export default function ProfileDropdown() {
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#1A3C34] font-semibold">Terima email reminder</span>
           <button 
+            type="button"
             onClick={() => setIsReminderActive(!isReminderActive)}
             className={`w-10 h-5 rounded-full transition-all duration-300 relative ${
               isReminderActive ? 'bg-[#5E8B7E]' : 'bg-gray-300'
@@ -69,12 +76,13 @@ export default function ProfileDropdown() {
 
       {/* Action Buttons */}
       <div className="space-y-1">
-        <button className="flex items-center gap-3 w-full text-[#1A3C34] hover:bg-gray-50 p-3 rounded-xl transition-all group">
+        <button type="button" className="flex items-center gap-3 w-full text-[#1A3C34] hover:bg-gray-50 p-3 rounded-xl transition-all group">
           <Key size={18} className="text-gray-400 group-hover:text-[#1A3C34]" />
           <span className="text-sm font-bold">Ganti password</span>
         </button>
 
         <button 
+          type="button"
           onClick={handleLogout}
           className="flex items-center gap-3 w-full text-[#9B2C2C] hover:bg-red-50 p-3 rounded-xl transition-all"
         >
