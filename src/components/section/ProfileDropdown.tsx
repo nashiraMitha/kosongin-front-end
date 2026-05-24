@@ -2,24 +2,68 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Key } from "lucide-react";
+import { LogOut, Key, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { getProfile, patchProfileReminderSettings } from "@/api";
+import { client } from "@/lib/api-client";
 
 export default function ProfileDropdown() {
   const router = useRouter();
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@gmail.com");
   const [isReminderActive, setIsReminderActive] = useState(false);
+  const [reminderTime, setReminderTime] = useState("20:00");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchProfileData = async () => {
+    try {
+      const { data, error } = await getProfile({ client });
+      if (data?.success && data.data) {
+        setUserName(data.data.nickName || data.data.fullName || "User");
+        setUserEmail(data.data.email || "");
+        setIsReminderActive(data.data.reminderEnabled ?? false);
+        if (data.data.reminderTime) {
+          setReminderTime(data.data.reminderTime);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal memuat profil:", err);
+    }
+  };
 
   useEffect(() => {
-    const savedName = localStorage.getItem("user_name");
-    const savedEmail = localStorage.getItem("user_email");
-    if (savedName) setUserName(savedName);
-    if (savedEmail) setUserEmail(savedEmail);
+    fetchProfileData();
   }, []);
 
+  const toggleReminder = async () => {
+    if (isUpdating) return;
+    
+    const newValue = !isReminderActive;
+    setIsUpdating(true);
+    
+    try {
+      const { data, error } = await patchProfileReminderSettings({
+        client,
+        body: {
+          opt_in: newValue,
+          reminder_time: newValue ? reminderTime : undefined
+        }
+      });
+
+      if (data?.success) {
+        setIsReminderActive(newValue);
+      } else {
+        console.error("Gagal update reminder:", error);
+      }
+    } catch (err) {
+      console.error("Terjadi kesalahan:", err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("user_session");
+    localStorage.clear();
     window.location.href = "/login";
   };
 
@@ -46,21 +90,26 @@ export default function ProfileDropdown() {
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#1A3C34] font-semibold">Terima email reminder</span>
           <button 
-            onClick={() => setIsReminderActive(!isReminderActive)}
+            disabled={isUpdating}
+            onClick={toggleReminder}
             className={`w-10 h-5 rounded-full transition-all duration-300 relative ${
               isReminderActive ? 'bg-[#5E8B7E]' : 'bg-gray-300'
-            }`}
+            } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-transform duration-300 ${
-              isReminderActive ? 'translate-x-6' : 'translate-x-1'
-            }`} />
+            {isUpdating ? (
+              <Loader2 className="w-3 h-3 text-white animate-spin absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+            ) : (
+              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-transform duration-300 ${
+                isReminderActive ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            )}
           </button>
         </div>
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#1A3C34] font-semibold">Jam pengiriman</span>
           <span className="text-[12px] font-bold bg-[#FFE4E6] text-[#1A3C34] px-3 py-1 rounded-lg">
-            20 : 00
+            {reminderTime.split(':').join(' : ')}
           </span>
         </div>
       </div>
