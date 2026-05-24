@@ -10,6 +10,8 @@ export type RegisterRequest = {
     email: string;
     password: string;
     passwordConfirmation: string;
+    reminderEnabled?: boolean;
+    reminderTime?: string;
 };
 
 export type LoginRequest = {

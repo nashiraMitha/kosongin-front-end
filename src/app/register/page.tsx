@@ -20,7 +20,8 @@ export default function RegisterPage() {
     nickname: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    reminderEnabled: false,
   });
 
   const [errors, setErrors] = useState({
@@ -86,6 +87,8 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           passwordConfirmation: formData.confirmPassword,
+          reminderEnabled: formData.reminderEnabled,
+          reminderTime: formData.reminderEnabled ? "20:00" : undefined, // Default jam 8 malam
         },
       });
 
@@ -229,7 +232,12 @@ export default function RegisterPage() {
                 <span>Remember me</span>
               </label>
               <label className="flex items-start gap-2 cursor-pointer text-[11px] text-gray-600 leading-tight">
-                <input type="checkbox" className="mt-0.5 rounded border-gray-300 accent-[#568F87]" />
+                <input 
+                  type="checkbox" 
+                  checked={formData.reminderEnabled}
+                  onChange={(e) => setFormData({...formData, reminderEnabled: e.target.checked})}
+                  className="mt-0.5 rounded border-gray-300 accent-[#568F87]" 
+                />
                 <span>Saya bersedia menerima email pengingat harian untuk mencatat konsumsi.</span>
               </label>
             </div>
