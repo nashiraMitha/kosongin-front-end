@@ -101,7 +101,7 @@ export default function TrackingPage() {
     }
   };
 
-  const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const totalExpense = consumptionData.reduce((acc: number, curr: any) => acc + Number(curr.amount || 0), 0);
   const previousExpense = insightData?.previous_period_total || 0;
 
   const chartData = graphPeriod === "monthly" 

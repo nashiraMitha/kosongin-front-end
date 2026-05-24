@@ -71,7 +71,7 @@ export default function DashboardPage() {
     fetchData();
   }, [router]);
 
-  const totalExpense = consumptionData.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const totalExpense = consumptionData.reduce((acc: number, curr: any) => acc + Number(curr.amount || 0), 0);
 
   if (loading) return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans">
@@ -181,7 +181,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               {shieldData.length > 0 ? (
-                shieldData.slice(0, 3).map((item, idx) => (
+                shieldData.slice(0, 3).map((item: any, idx: number) => (
                   <div key={idx} className="p-4 bg-[#F8FAFA] rounded-[20px] border border-gray-50 group hover:border-[#5E8B7E] transition-all">
                     <p className="text-sm font-bold text-[#06322b] truncate">{item.itemName}</p>
                                       <div className="flex justify-between items-center mt-1">

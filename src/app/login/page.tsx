@@ -84,7 +84,8 @@ export default function LoginPage() {
 
         // Save user display name if returned by API; fallback to email/nickname
         try {
-          const returnedUser = data.data?.user ?? data.data?.userData ?? null;
+          const loginData = data.data as any;
+          const returnedUser = loginData?.user ?? loginData?.userData ?? null;
           const displayName = returnedUser?.fullname || returnedUser?.nickname || email || "User";
           localStorage.setItem("user_name", displayName);
         } catch (e) {
