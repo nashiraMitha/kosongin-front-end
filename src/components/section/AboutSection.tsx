@@ -1,58 +1,42 @@
-import Image from "next/image";
+"use client";
 
-export default function About() {
+import React from "react";
+
+export default function AboutSection() {
   return (
-    <section className="relative w-full py-32 overflow-hidden">
-
-      {/* BG DESKTOP */}
-      <div
-        className="absolute inset-0 hidden md:block bg-cover bg-center"
-        style={{ backgroundImage: "url('/bck.png')" }}
-      />
-
-      {/* BG MOBILE */}
-      <div
-        className="absolute inset-0 block md:hidden bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg.png')" }}
-      />
-
-      {/* CONTENT */}
-      <div className="relative w-full px-8 md:px-16 lg:px-24 text-justify">
-
-        {/* LOGO */}
-        <Image
-          src="/Logo1.svg"
-          alt="Logo"
-          width={120}
-          height={120}
-          className="mx-auto mb-12"
+    // WADAH KONTROL: Ditandai relative dan overflow-hidden agar gambar Bck.png tidak meluber keluar
+    <section className="relative w-full pt-20 pb-32 overflow-hidden bg-transparent">
+      
+      {/* 1. LAYER LATAR BELAKANG: Gambar troli Bck.png diisolasi penuh di sini */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        <img 
+          src="/Bck.png" 
+          alt="Blurred carts background" 
+          className="w-full h-full object-cover"
         />
+      </div>
 
-        <h2 className="hidden md:block text-center text-3xl md:text-4xl font-heading font-bold">
-          Platform “rem digital”{" "}
-          <span className="text-[#3D6660]">
-            untuk Gen Z dan Millenial
-          </span>
+      {/* 2. LAYER KONTEN UTAMA: Diberi z-10 agar teks melayang dengan jelas di atas gambar */}
+      <div className="relative z-10 container mx-auto px-6 text-center flex flex-col items-center">
+        
+        {/* Logo/Icon Rumah/Keranjang Hijau Kecil */}
+        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm text-xl">
+          🏠
+        </div>
+
+        {/* Judul Komponen */}
+        <h2 className="text-3xl md:text-4xl font-heading font-bold text-[#06322b] max-w-2xl leading-tight">
+          Platform “rem digital” untuk Gen Z dan Millenial
         </h2>
 
-        <h2 className="block md:hidden text-center text-2xl font-heading font-bold leading-tight">
-          Platform “rem digital”
-          <br />
-          <span className="text-[#3D6660]">
-            untuk Gen Z dan Millenial
-          </span>
-        </h2>
-
-        <div className="mt-60 w-full px-2 md:px-6 lg:px-10 text-xl leading-relaxed">
-
-          <p className="max-w-lg">
-            Kosongin hadir sebagai ruang refleksi konsumsi, bukan untuk menghakimi, tapi untuk membantu kamu sadar dan berubah sedikit demi sedikit.
+        {/* Pembagian Grid Deskripsi Kiri & Kanan */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mt-12 max-w-4xl text-left text-sm md:text-base text-gray-600 leading-relaxed">
+          <p>
+            Kosongin hadir sebagai ruang refleksi konsumsi, membantu menahan hasrat belanja impulsif lewat sistem pencatatan inventaris barang yang intuitif dan menantang pengguna untuk lebih bijak mengelola pengeluaran.
           </p>
-
-          <p className="max-w-lg md:ml-auto md:mt-32 mt-12">
-            Lebih dari 60% Gen Z peduli lingkungan — tapi kesulitan mengubah kebiasaan belanja mereka. Kosongin hadir bukan untuk menyalahkan, tapi sebagai teman yang membantu kamu sadar satu langkah lebih awal dari checkout.
+          <p>
+            Lebih dari 60% Gen Z dan Millenial menyatakan peduli terhadap dampak penumpukan barang tak terpakai. Bersama komunitas, kami membangun kebiasaan hidup minimalis demi masa depan finansial dan lingkungan yang lebih sehat.
           </p>
-
         </div>
 
       </div>

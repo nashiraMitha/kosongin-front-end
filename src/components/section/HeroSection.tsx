@@ -3,13 +3,16 @@ import Image from "next/image";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">\n\n      <img src="/Bck.png" alt="background" className="absolute inset-0 z-0 w-full h-full object-cover" />
+    // DIKOREKSI: Ditambahkan bg-white agar dasarnya mutlak putih bersih
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-white">
+
+      {/* REVISI: Tag <img src="/Bck.png" /> SUDAH DIHAPUS DARI SINI */}
 
       {/* PINK ATAS */}
-      <div className="absolute top-[-80px] right-[-120px] w-[450px] md:w-[1000px] h-[300px] md:h-[600px] bg-gradient-to-br from-[#FFFAF9] via-[#F5BABB] to-transparent blur-[140px] opacity-60 rounded-full" />
+      <div className="absolute top-[-80px] right-[-120px] w-[450px] md:w-[1000px] h-[300px] md:h-[600px] bg-gradient-to-br from-[#FFFAF9] via-[#F5BABB] to-transparent blur-[140px] opacity-60 rounded-full z-0" />
 
       {/* PINK BAWAH */}
-      <div className="absolute bottom-[-80px] left-[-120px] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-gradient-to-tr from-[#FFFAF9] via-[#F5BABB] to-transparent blur-[140px] opacity-50 rounded-full" />
+      <div className="absolute bottom-[-80px] left-[-120px] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-gradient-to-tr from-[#FFFAF9] via-[#F5BABB] to-transparent blur-[140px] opacity-50 rounded-full z-0" />
 
       {/* CONTENT */}
       <div className="relative z-10 w-full px-6 md:px-16 lg:px-24">
@@ -30,18 +33,15 @@ export default function HeroSection() {
 
             {/* BUTTON DESKTOP */}
             <Link href="/login" className="hidden md:flex md:justify-start">
-
-              <button className=" mt-8 w-fit bg-[#90BAB7] px-20 py-3 rounded-2xl font-bold text-lg text-white hover:bg-[#4a7a73] transition-all active:scale-95">
+              <button className="mt-8 w-fit bg-[#90BAB7] px-20 py-3 rounded-2xl font-bold text-lg text-white hover:bg-[#4a7a73] transition-all active:scale-95">
                 Mulai Kosongin
               </button>
-
             </Link>
 
           </div>
 
           {/* RIGHT */}
           <div className="flex justify-center md:justify-end">
-
             <Image
               src="/Headline.png"
               alt="Headline"
@@ -49,21 +49,17 @@ export default function HeroSection() {
               height={300}
               className="w-full max-w-[160px] md:max-w-[500px] aspect-square object-cover rounded-3xl"
             />
-
           </div>
 
         </div>
 
         {/* BUTTON MOBILE */}
         <Link href="/login" className="flex justify-center md:hidden">
-
           <button className="mt-10 w-fit bg-[#90BAB7] px-6 py-3 rounded-xl font-bold text-sm text-white hover:bg-[#4a7a73] transition-all active:scale-95">
             <div className="flex items-center gap-2">
               <span>Mulai Kosongin</span>
             </div>
-
           </button>
-
         </Link>
 
       </div>
