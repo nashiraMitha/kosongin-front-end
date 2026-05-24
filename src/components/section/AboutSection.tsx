@@ -20,9 +20,7 @@ export default function AboutSection() {
       <div className="relative z-10 container mx-auto px-6 text-center flex flex-col items-center">
         
         {/* Logo/Icon Rumah/Keranjang Hijau Kecil */}
-        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm text-xl">
-          🏠
-        </div>
+        <img src="/Logo1.svg" alt="Kosongin logo" className="w-16 h-16 mb-6 rounded-full object-contain" />
 
         {/* Judul Komponen */}
         <h2 className="text-3xl md:text-4xl font-heading font-bold text-[#06322b] max-w-2xl leading-tight">
