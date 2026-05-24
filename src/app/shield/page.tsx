@@ -24,7 +24,7 @@ export default function ImpulseShieldPage() {
     duration: "3 Hari"
   });
 
-  // State Utama Data Shield
+  // State Utama Data Shield (Di-lock pakai array kosong agar aman dari error undefined)
   const [shieldList, setShieldList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({ cancelledCount: 0, savedAmount: 0, successRate: 0 });
@@ -48,7 +48,7 @@ export default function ImpulseShieldPage() {
     setStats({ cancelledCount: cancelled.length, savedAmount: totalSaved, successRate: rate });
   };
 
-  // 1. Ambil Data Real-Time dari Server API Backend
+  // 1. Ambil Data Real-Time Sinkron dari Server API Backend (Sudah Bersih dari Typo 'n')
   const refreshShieldData = async () => {
     try {
       const token = Cookies.get("token") || localStorage.getItem("user_session");
@@ -108,7 +108,7 @@ export default function ImpulseShieldPage() {
     refreshShieldData();
   }, [router]);
 
-  // 2. Aksi Tambah Item Baru (Layar Langsung Ter-update Instan Tanpa Delay)
+  // 2. Aksi Tambah Item Baru (Layar Langsung Ter-update Instan)
   const handleAddToWaitingList = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = Number(formData.price || 0);
@@ -133,7 +133,7 @@ export default function ImpulseShieldPage() {
       status: "Waiting"
     };
 
-    // Optimistic Update: Masukkan data ke layar detik ini juga
+    // Optimistic Update lokal biar responsif di layar
     const currentList = Array.isArray(shieldList) ? shieldList : [];
     const updatedList = [newItem, ...currentList];
     setShieldList(updatedList);
@@ -214,14 +214,14 @@ export default function ImpulseShieldPage() {
           <p className="text-gray-500">Rem digitalku sebelum checkout. Tunda, pikir dua kali.</p>
         </section>
 
-        {/* INSIGHT STATISTIK CARDS */}
+        {/* INSIGHT STATISTIK */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <InsightCard title="Berhasil dibatalkan" value={stats.cancelledCount.toString()} sub="item tidak jadi dibeli" />
           <InsightCard title="Estimasi dihemat" value={`Rp ${stats.savedAmount.toLocaleString('id-ID')}`} sub="Total penghematan" />
           <InsightCard title="Success rate" value={`${stats.successRate}%`} sub="Persentase disiplin" />
         </section>
 
-        {/* TATA LETAK GRID ANTI-GLITCH LAYOUT */}
+        {/* GRID LAYOUT UTAMA */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           
           {/* SISI KIRI: INPUT FORM CARD & WAITING LIST */}
@@ -306,7 +306,7 @@ export default function ImpulseShieldPage() {
               </form>
             </Card>
 
-            {/* BOX WAITING LIST (KIRI BAWAH) */}
+            {/* BOX WAITING LIST KIRI BAWAH */}
             <div className="space-y-4">
               <h3 className="font-bold text-[#06322b] text-xl flex items-center gap-2">
                  <ClipboardList className="w-5 h-5 text-[#5E8B7E]" /> Waiting List
@@ -330,7 +330,7 @@ export default function ImpulseShieldPage() {
             </div>
           </div>
           
-          {/* SISI KANAN: RIWAYAT KEPUTUSAN CARD */}
+          {/* SISI KANAN: RIWAYAT KEPUTUSAN */}
           <Card className="p-6 rounded-[32px] border border-gray-200/60 shadow-sm bg-white min-h-[580px] flex flex-col">
             <h3 className="font-bold text-[#06322b] text-xl mb-6">Riwayat Keputusan</h3>
             <div className="space-y-3 flex-1 overflow-y-auto pr-1 max-h-[700px]">
@@ -363,7 +363,7 @@ export default function ImpulseShieldPage() {
   );
 }
 
-// SUBKOMPONEN HELPER INSIGHT CARD
+// HELPER: INSIGHT CARD
 function InsightCard({ title, value, sub }: any) {
   return (
     <Card className="p-5 rounded-[24px] border border-gray-200/60 shadow-sm bg-[#F8FAFA]">
@@ -374,7 +374,7 @@ function InsightCard({ title, value, sub }: any) {
   );
 }
 
-// SUBKOMPONEN HELPER WAITING ITEM
+// HELPER: ITEM LIST CARD
 function WaitingItem({ item, onCancel, onBuy }: any) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
@@ -411,7 +411,7 @@ function WaitingItem({ item, onCancel, onBuy }: any) {
         </Button>
       </div>
 
-      {/* DETEKSI MODAL WARNING KEPUTUSAN */}
+      {/* CONFIRMATION WARNING MODAL */}
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-[24px] p-6 w-full max-w-sm mx-4 shadow-xl border border-gray-100 text-center animate-in scale-in duration-150">
