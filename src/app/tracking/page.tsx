@@ -132,10 +132,6 @@ export default function TrackingPage() {
       await client.post({
         url: "/consumption-logs",
         data: formDataToSend,
-        headers: {
-          // Menandakan ganti tipe request ke pengiriman file biner
-          "Content-Type": "multipart/form-data", 
-        }
       } as any);
 
       alert("Catatan konsumsi beserta foto berhasil disimpan!");
@@ -159,9 +155,40 @@ export default function TrackingPage() {
   const totalExpense = consumptionData.reduce((acc: number, curr: any) => acc + Number(curr.amount || 0), 0);
   const previousExpense = insightData?.previous_period_total || 0;
 
-  const chartData = graphPeriod === "monthly" 
-    ? (insightData?.monthly_trend || []) 
-    : (insightData?.weekly_trend || []);
+  // Jika backend menyediakan trend, gunakan itu. Jika tidak, bangun grafik dari riwayat konsumsi (fallback)
+  const aggregateChartFromLogs = (logs: any[], period: "weekly" | "monthly") => {
+    if (!Array.isArray(logs)) return [];
+    const acc = new Map<string, { label: string; total: number; date: Date }>();
+    logs.forEach((it: any) => {
+      const rawDate = it.date || it.createdAt || it.dateAdded || it.timestamp;
+      const d = rawDate ? new Date(rawDate) : new Date();
+      if (isNaN(d.getTime())) return;
+      let key: string, label: string;
+      if (period === "monthly") {
+        key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        label = d.toLocaleString("id-ID", { month: "short", year: "numeric" });
+      } else {
+        // Week: gunakan tanggal awal minggu (Senin) sebagai key dan label singkat
+        const start = new Date(d);
+        const day = start.getDay();
+        const diff = (day + 6) % 7; // jarak ke Senin
+        start.setDate(start.getDate() - diff);
+        key = start.toISOString().slice(0, 10);
+        label = `${start.getDate()} ${start.toLocaleString("id-ID", { month: "short" })}`;
+      }
+      const amount = Number(it.amount ?? it.total ?? it.nominal ?? it.price ?? 0) || 0;
+      if (!acc.has(key)) acc.set(key, { label, total: 0, date: d });
+      acc.get(key)!.total += amount;
+    });
+    const arr = Array.from(acc.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+    return arr.map(({ label, total }) => ({ label, total }));
+  };
+
+  const computedChartData = aggregateChartFromLogs(consumptionData, graphPeriod);
+
+  const chartData = graphPeriod === "monthly"
+    ? ((Array.isArray(insightData?.monthly_trend) && insightData.monthly_trend.length) ? insightData.monthly_trend : computedChartData)
+    : ((Array.isArray(insightData?.weekly_trend) && insightData.weekly_trend.length) ? insightData.weekly_trend : computedChartData);
 
   return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
