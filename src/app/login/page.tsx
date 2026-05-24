@@ -60,7 +60,6 @@ export default function LoginPage() {
       });
 
       if (error) {
-        // Handle error dari validation middleware (400)
         const errorData = error as any;
         let errorMsg = errorData.message || "Login gagal.";
         
@@ -73,25 +72,28 @@ export default function LoginPage() {
         return;
       }
 
-      if (data?.success) {
+      // AMAN VERCEL: Memaksa objek response ke tipe 'any' agar TypeScript mengizinkan pengecekan nested data
+      const rawData: any = data;
+
+      if (rawData?.success) {
         localStorage.setItem("user_session", "true");
-        if (data.data?.accessToken) {
-          localStorage.setItem("accessToken", data.data.accessToken);
+        if (rawData.data?.accessToken) {
+          localStorage.setItem("accessToken", rawData.data.accessToken);
         }
-        if (data.data?.refreshToken) {
-          localStorage.setItem("refreshToken", data.data.refreshToken);
+        if (rawData.data?.refreshToken) {
+          localStorage.setItem("refreshToken", rawData.data.refreshToken);
         }
 
-        // Save user display name if returned by API; fallback to email/nickname
+        // Simpan display name user tanpa membuat crash build pipeline
         try {
-          const returnedUser = data.data?.user ?? data.data?.userData ?? null;
+          const returnedUser = rawData.data?.user ?? rawData.data?.userData ?? null;
           const displayName = returnedUser?.fullname || returnedUser?.nickname || email || "User";
           localStorage.setItem("user_name", displayName);
         } catch (e) {
           localStorage.setItem("user_name", email || "User");
         }
           
-        // Cek jika admin (berdasarkan email dummy atau role dari token jika tersedia)
+        // Cek jika akun adalah admin berdasarkan email dummy
         if (email === "admin@kosongin.com") {
           localStorage.setItem("user_name", "Admin Kosongin");
           router.push("/admin/dashboard");
@@ -180,7 +182,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* FOOTER LOGIN (SESUAI FIGMA) */}
           <div className="flex items-center justify-between mt-8 px-1">
             <p className="text-[11px] text-gray-600">
               Belum punya akun?{" "}
@@ -191,6 +192,7 @@ export default function LoginPage() {
             
             <Link href="/admin/login" title="Log in sebagai Admin">
               <button 
+                type="button"
                 onClick={handleAdminQuickLogin}
                 className="text-[11px] font-bold underline text-black hover:text-[#568F87] transition-colors"
               >
