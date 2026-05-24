@@ -34,7 +34,6 @@ Project ini dibangun dengan arsitektur modern berbasis React dan Next.js:
 - **Styling:** Tailwind CSS + PostCSS
 - **UI Components:** Radix UI (unstyled accessible components)
 - **HTTP Client:** Axios
-- **API Client:** Hey API (@hey-api/client-fetch)
 - **Icons:** Lucide React + React Icons
 - **Charts/Visualizations:** Recharts
 - **Authentication:** JWT (json-web-token) + js-cookie
@@ -70,7 +69,7 @@ src/
 │   ├── page.tsx      # Home page
 │   └── [route]/      # Route folders (auth, dashboard, profile, dll)
 ├── components/       # Reusable React UI components
-│   ├── common/       # Common components (Header, Navbar, Footer, Button, dll)
+│   ├── common/       # Common components (Header, Navbar, Footer, Button)
 │   ├── dashboard/    # Dashboard-specific components
 │   ├── consumption/  # Consumption tracking components
 │   ├── wishlist/     # Wishlist-specific components
@@ -106,6 +105,45 @@ src/
 
 ---
 
+## 5. Fitur Utama Aplikasi (UI/UX Perspective)
+
+### 🛡️ **Impulse Shield Page**
+- Interface untuk mencatat item yang ingin dibeli
+- Countdown timer visual untuk cooling-off period
+- Tampilan item dengan deskripsi & kategori
+- Button untuk confirm/cancel pembelian setelah cooldown
+- Responsive design untuk mobile & desktop
+
+### 📊 **Dashboard & Analytics**
+- Overview statistik konsumsi (visual charts menggunakan Recharts)
+- Daily/weekly/monthly spending overview
+- Category breakdown pie chart
+- Trend line chart
+- Quick stats cards (total spending, items, challenges done)
+
+### 📝 **Wishlist Page**
+- Grid/list view untuk wishlist items
+- Item cards dengan image, price, priority
+- Filter & search functionality
+- Add/remove dari wishlist buttons
+- Status indicator (pending, purchased, expired)
+
+### 🏆 **Challenges Page**
+- Browse & filter available challenges
+- Challenge cards dengan description, participants, progress
+- Join challenge button & modal
+- Leaderboard view dengan ranking
+- Challenge details & history
+
+### 👤 **User Profile & Settings**
+- Profile information display & edit form
+- Profile picture upload
+- Settings panel (notifications, preferences)
+- Account security settings
+- Activity history / transaction log
+
+---
+
 ## 6. Quick Start - Cara Memulai Lokal
 
 ### Step 1: Clone Repository
@@ -127,21 +165,15 @@ cp .env.example .env.local
 
 Kemudian edit `.env.local` dan isi nilai-nilai berikut:
 ```env
-# API Configuration
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
-
-# Application Configuration
 NEXT_PUBLIC_APP_NAME=Kosongin
 NEXT_PUBLIC_APP_URL=http://localhost:3001
-
-# Frontend
 NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
 ```
 
 > **⚠️ Catatan:** 
 > - Jangan commit file `.env.local` ke repository
 > - Variables dengan prefix `NEXT_PUBLIC_` akan visible di browser
-> - Gunakan `.env.local` untuk development, `.env.production.local` untuk production
 > - Backend API harus sudah berjalan di port yang sesuai
 
 ### Step 4: Jalankan Development Server
@@ -149,17 +181,12 @@ NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
 npm run dev
 ```
 
-Server akan berjalan di `http://localhost:3001` (atau port yang ditentukan).
+Server akan berjalan di `http://localhost:3001`
 
-Buka browser dan akses:
+### Step 5: Buka Browser
 ```
 http://localhost:3001
 ```
-
-### Step 5: (Opsional) Testing Features
-- Register akun baru atau login dengan akun test
-- Navigasi ke berbagai fitur (Dashboard, Impulse Shield, Wishlist, Challenges, Profile)
-- Test API calls ke backend
 
 ---
 
@@ -174,69 +201,9 @@ http://localhost:3001
 
 ---
 
-## 5. Fitur Utama Aplikasi (UI/UX Perspective)
+## 8. UI Components & Styling
 
-### 🛡️ **Impulse Shield Page**
-- Interface untuk mencatat item yang ingin dibeli
-- Countdown timer visual untuk cooling-off period
-- Tampilan item dengan deskripsi & kategori
-- Button untuk confirm/cancel pembelian setelah cooldown
-- Responsive design untuk mobile & desktop
-
-### 📊 **Dashboard & Analytics**
-- Overview statistik konsumsi (visual charts)
-- Daily/weekly/monthly spending overview
-- Category breakdown pie chart
-- Trend line chart menggunakan Recharts
-- Quick stats cards (total spending, items, challenges done)
-
-### 📝 **Wishlist Page**
-- Grid/list view untuk wishlist items
-- Item cards dengan image, price, priority
-- Filter & search functionality
-- Add/remove from wishlist buttons
-- Status indicator (pending, purchased, expired)
-
-### 🏆 **Challenges Page**
-- Browse & filter available challenges
-- Challenge cards dengan description, participants, progress
-- Join challenge button & modal
-- Leaderboard view dengan ranking
-- Challenge details & history
-
-### 👤 **User Profile & Settings**
-- Profile information display & edit form
-- Profile picture upload
-- Settings panel (notifications, preferences)
-- Account security settings
-- Activity history / transaction log
-
----
-
-## 6. API Integration
-
-Frontend terhubung ke Backend API untuk mengambil & mengirim data. Untuk dokumentasi lengkap endpoints & database, lihat [Backend README](../kosongin-backend/README.md).
-
-### Konfigurasi API Connection
-```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api    # Development
-NEXT_PUBLIC_API_BASE_URL=https://postgres-production-53aa.up.railway.app/api  # Production
-```
-
-### Authentication Flow
-1. User login via login form
-2. Backend mengembalikan JWT token
-3. Token disimpan di cookies/localStorage
-4. Setiap API request otomatis mengirim token di header
-5. Backend verifikasi token & return protected data
-
-Untuk detail API endpoints lengkap, lihat Backend API Documentation di `/api/docs` (Scalar UI)
-
----
-
-## 7. UI Components & Styling
-
-### Component Library
+### Component Libraries yang Digunakan
 - **Radix UI** - Unstyled, accessible components sebagai base
 - **Tailwind CSS** - Utility-first CSS untuk styling
 - **Lucide React** - SVG icons library
@@ -275,7 +242,35 @@ export default function DashboardCard({ title, value, icon, trend }: DashboardCa
 }
 ```
 
-### Development Variables (`.env.local`)
+---
+
+## 9. API Integration Overview
+
+Frontend terhubung ke Backend API untuk mengambil & mengirim data. Untuk dokumentasi lengkap endpoints & database, lihat [Backend README](../kosongin-backend/README.md).
+
+### Konfigurasi API
+```env
+# Development
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+
+# Production  
+NEXT_PUBLIC_API_BASE_URL=https://postgres-production-53aa.up.railway.app/api
+```
+
+### Authentication Flow
+1. User login via login form
+2. Backend mengembalikan JWT token
+3. Token disimpan di cookies/localStorage
+4. Setiap API request otomatis mengirim token di header
+5. Backend verifikasi token & return protected data
+
+Untuk detail API endpoints lengkap, lihat Backend API Documentation di `/api/docs` (Scalar UI)
+
+---
+
+## 10. Environment Variables
+
+### Development (`.env.local`)
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
 NEXT_PUBLIC_APP_NAME=Kosongin
@@ -283,7 +278,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3001
 NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
 ```
 
-### Production Variables (`.env.production.local`)
+### Production (Vercel)
+Set di Vercel Dashboard → Project Settings → Environment Variables:
 ```env
 NEXT_PUBLIC_API_BASE_URL=https://postgres-production-53aa.up.railway.app/api
 NEXT_PUBLIC_APP_NAME=Kosongin
@@ -291,24 +287,53 @@ NEXT_PUBLIC_APP_URL=https://kosongin.vercel.app
 NEXT_PUBLIC_FRONTEND_URL=https://kosongin.vercel.app
 ```
 
-Untuk detail lengkap, lihat `.env.example`
+Untuk dokumentasi lengkap, lihat `.env.example`
 
-## 11. Common Tasks & Workflows
+---
+
+## 11. Production Deployment (Vercel)
+
+### Production URL
+```
+🌐 https://kosongin.vercel.app
+```
+
+### Deploy via GitHub (Recommended)
+1. Push code ke GitHub repository
+2. Buka [vercel.com](https://vercel.com) dan sign in
+3. Klik "Add New Project"
+4. Select repository `kosongin-frontend`
+5. Configure environment variables:
+   - `NEXT_PUBLIC_API_BASE_URL=https://postgres-production-53aa.up.railway.app/api`
+   - `NEXT_PUBLIC_APP_URL=https://kosongin.vercel.app`
+   - `NEXT_PUBLIC_FRONTEND_URL=https://kosongin.vercel.app`
+6. Click "Deploy"
+
+Automatic deployments terjadi setiap push ke main branch.
+
+### Deploy via CLI
+```bash
+npm install -g vercel
+vercel                  # Preview deployment
+vercel --prod          # Production deployment
+```
+
+---
+
+## 12. Common Development Tasks
 
 ### Membuat Component Baru
 ```bash
-# Buat component di src/components/
-# components/MyComponent.tsx
+# src/components/MyComponent.tsx
 ```
 
 ### Menambah Page Baru
 ```bash
-# Buat di src/app/
-# app/my-route/page.tsx
-# app/my-route/layout.tsx (opsional)
+# src/app/my-route/page.tsx
+# src/app/my-route/layout.tsx (opsional)
 ```
 
-### Menambah Service Layer untuk API
+### Menambah API Service
 ```typescript
 // src/services/myService.ts
 import axios from 'axios';
@@ -328,9 +353,8 @@ export const myService = {
 };
 ```
 
-### Styling Component
+### Styling dengan Tailwind
 ```typescript
-// Gunakan Tailwind CSS classes
 <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md hover:shadow-lg transition">
   <p className="text-lg font-bold">Title</p>
   <p className="text-sm text-gray-100 mt-2">Description</p>
@@ -339,45 +363,42 @@ export const myService = {
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 ### Port 3001 sudah terpakai
 ```bash
-# Gunakan port berbeda
 PORT=3002 npm run dev
 ```
 
-### Backend API tidak bisa diakses dari frontend
-- Verifikasi Backend sudah berjalan di port yang benar
+### Backend API tidak bisa diakses
+- Verifikasi Backend sudah berjalan
 - Check `NEXT_PUBLIC_API_BASE_URL` di `.env.local`
-- Verifikasi CORS configuration di Backend
-- Check network tab di browser DevTools untuk melihat error
+- Verifikasi CORS di Backend
+- Check network tab di browser DevTools
 
 ### Hot reload tidak berfungsi
 ```bash
-# Clear cache dan restart dev server
 rm -rf .next node_modules package-lock.json
 npm install
 npm run dev
 ```
 
-### TypeScript errors pada build
+### TypeScript build errors
 ```bash
-# Clear cache dan build ulang
 rm -rf .next
 npm run build
 ```
 
-### Styling tidak berubah dengan Tailwind
-- Verifikasi file ada di `src/**/*.{tsx,ts}` (Tailwind scan files)
-- Jika masih tidak work, restart dev server
-- Clear browser cache (Ctrl+Shift+Delete)
+### Tailwind styling tidak berubah
+- Verifikasi file ada di `src/**/*.{tsx,ts}`
+- Restart dev server
+- Clear browser cache
 
 ---
 
-## 13. Kontribusi & Feedback
+## 14. Kontribusi & Feedback
 
-Untuk reporting bugs atau request features, buka issue di repository:
+Untuk reporting bugs atau request features:
 ```
 https://github.com/polaariiss/kosongin-frontend/issues
 ```
@@ -388,4 +409,11 @@ https://github.com/polaariiss/kosongin-frontend/issues
 
 ---
 
-**Frontend Live:** https://kosongin.vercel.app/
+## 📄 Lisensi
+
+Proyek ini dirilis di bawah lisensi **ISC**. Lihat [LICENSE](LICENSE) untuk detail lebih lanjut.
+
+---
+
+**Last Updated:** May 24, 2026  
+**Frontend Production:** https://kosongin.vercel.app/
