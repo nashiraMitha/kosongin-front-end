@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart,
@@ -14,13 +14,14 @@ import {
 import LoginNavbar from "@/components/section/LoginNavbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, TrendingUp } from "lucide-react";
+import { ClipboardList, TrendingUp, Image as ImageIcon, X, ImageIcon as FileImageIcon } from "lucide-react";
 import { getConsumptionLogs, getDashboardInsight } from "@/api";
 import { client } from "@/lib/api-client";
 import Cookies from "js-cookie";
 
 export default function TrackingPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State manajemen data tracking harian
   const [consumptionData, setConsumptionData] = useState<any[]>([]);
@@ -30,13 +31,15 @@ export default function TrackingPage() {
   // Mengunci default filter aktif grafik langsung ke Bulanan (monthly)
   const [graphPeriod, setGraphPeriod] = useState<"weekly" | "monthly">("monthly");
 
-  // State Form Input Pengeluaran
+  // State Form Input Pengeluaran + FOTO
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Lainnya");
   const [customCategory, setCustomCategory] = useState("");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Ambil data gabungan dari server API
@@ -55,7 +58,9 @@ export default function TrackingPage() {
         const rawData = logsRes.data.data || [];
         const mappedData = rawData.map((item: any) => ({
           ...item,
-          amount: item.amount ?? item.price ?? item.nominal ?? 0
+          amount: item.amount ?? item.price ?? item.nominal ?? 0,
+          // Fallback properti gambar dari API backend jika ada
+          imageUrl: item.imageUrl || item.image || item.photo || null 
         }));
         setConsumptionData(mappedData);
       }
@@ -79,7 +84,29 @@ export default function TrackingPage() {
     fetchData();
   }, [router]);
 
-  // Aksi Menyimpan Catatan Konsumsi Baru (POST /consumption-logs)
+  // Handler Perubahan File Gambar (Foto)
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran file terlalu besar! Maksimal boks foto adalah 2MB.");
+        return;
+      }
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Hapus Pratinjau Foto
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Aksi Menyimpan Catatan Konsumsi Baru (Mendukung FormData upload binary file)
   const handleSaveConsumption = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemName || !price) {
@@ -89,22 +116,37 @@ export default function TrackingPage() {
 
     try {
       setIsSubmitting(true);
+
+      // SINTAKS UTAMA UPLOAD FOTO: Membungkus payload ke bentuk FormData objek
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", itemName);
+      formDataToSend.append("amount", String(Number(price)));
+      formDataToSend.append("category", category === "Lainnya" ? customCategory : category);
+      formDataToSend.append("date", date ? new Date(date).toISOString() : new Date().toISOString());
+      formDataToSend.append("notes", notes);
+      
+      if (imageFile) {
+        formDataToSend.append("image", imageFile); // 'image' sesuaikan dengan nama field di backend
+      }
+
       await client.post({
         url: "/consumption-logs",
-        data: {
-          name: itemName,
-          amount: Number(price),
-          category: category === "Lainnya" ? customCategory : category,
-          date: date ? new Date(date).toISOString() : new Date().toISOString(),
-          notes: notes
+        data: formDataToSend,
+        headers: {
+          // Menandakan ganti tipe request ke pengiriman file biner
+          "Content-Type": "multipart/form-data", 
         }
       } as any);
 
-      alert("Catatan konsumsi berhasil disimpan!");
+      alert("Catatan konsumsi beserta foto berhasil disimpan!");
+      
+      // Reset input form & foto ke semula
       setItemName("");
       setPrice("");
       setCustomCategory("");
       setNotes("");
+      handleRemoveImage();
+      
       await fetchData();
     } catch (error) {
       console.error("Gagal menyimpan catatan konsumsi:", error);
@@ -117,7 +159,6 @@ export default function TrackingPage() {
   const totalExpense = consumptionData.reduce((acc: number, curr: any) => acc + Number(curr.amount || 0), 0);
   const previousExpense = insightData?.previous_period_total || 0;
 
-  // Sinkronisasi data tren chart secara dinamis sesuai state filter aktif
   const chartData = graphPeriod === "monthly" 
     ? (insightData?.monthly_trend || []) 
     : (insightData?.weekly_trend || []);
@@ -128,10 +169,10 @@ export default function TrackingPage() {
       
       <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12">
         
-        {/* LAYOUT GRID UTAS */}
+        {/* LAYOUT GRID ATAS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           
-          {/* KOLOM KIRI: FORM INPUT */}
+          {/* KOLOM KIRI: FORM INPUT + UPLOAD FOTO */}
           <div className="lg:col-span-2 space-y-6">
             <div className="mb-2">
               <h1 className="text-2xl font-bold text-[#06322b]">Consumption Tracker</h1>
@@ -196,6 +237,40 @@ export default function TrackingPage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none bg-white text-gray-500"
                     />
                   </div>
+                </div>
+
+                {/* SINTAKS ELEMENT UPLOAD FOTO */}
+                <div className="space-y-2 text-left">
+                  <label className="text-sm font-bold text-[#06322b]">Lampirkan Foto Nota / Barang</label>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    accept="image/*" 
+                    onChange={handleImageChange} 
+                    className="hidden" 
+                  />
+                  
+                  {!imagePreview ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-[#5E8B7E] hover:text-[#5E8B7E] transition-all"
+                    >
+                      <ImageIcon className="w-6 h-6" />
+                      <span className="text-xs font-semibold">Klik untuk upload foto (Max 2MB)</span>
+                    </button>
+                  ) : (
+                    <div className="relative w-32 h-32 border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-gray-50">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -279,18 +354,9 @@ export default function TrackingPage() {
               <div className="h-[180px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <XAxis 
-                      dataKey="label" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{fontSize: 10, fill: '#9CA3AF'}}
-                    />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9CA3AF'}} />
                     <YAxis hide />
-                    <Tooltip 
-                      cursor={{fill: '#f9f9f9'}} 
-                      contentStyle={{borderRadius: '12px', border: 'none', fontSize: '11px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
-                      formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Konsumsi']}
-                    />
+                    <Tooltip cursor={{fill: '#f9f9f9'}} contentStyle={{borderRadius: '12px', border: 'none', fontSize: '11px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Konsumsi']} />
                     <Bar dataKey="total" fill="#fbc4b6" radius={[6, 6, 6, 6]} barSize={35} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -300,7 +366,7 @@ export default function TrackingPage() {
 
         </div>
 
-        {/* --- AREA BAWAH: RIWAYAT KONSUMSI --- */}
+        {/* --- AREA BAWAH: RIWAYAT KONSUMSI DENGAN DISPLAY FOTO --- */}
         <div className="space-y-4 pt-2">
           <h3 className="text-lg font-bold text-[#06322b] flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-[#5E8B7E]" /> Riwayat Konsumsi
@@ -308,9 +374,7 @@ export default function TrackingPage() {
 
           <Card className="p-6 md:p-8 rounded-[24px] border border-gray-200/60 shadow-sm bg-white min-h-[150px] flex flex-col justify-center">
             {loading ? (
-              <div className="text-center text-gray-400 italic text-sm">
-                Memuat riwayat belanja...
-              </div>
+              <div className="text-center text-gray-400 italic text-sm">Memuat riwayat belanja...</div>
             ) : consumptionData.length > 0 ? (
               <div className="space-y-3 w-full">
                 {consumptionData.map((item, idx) => (
@@ -318,11 +382,24 @@ export default function TrackingPage() {
                     key={item.id ?? idx} 
                     className="p-4 bg-[#F8FAFA] rounded-[16px] border border-gray-200/40 flex items-center justify-between hover:border-[#5E8B7E]/40 transition-all shadow-sm"
                   >
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold text-[#06322b]">{item.name || item.itemName}</p>
-                      <p className="text-[11px] text-gray-400 font-medium">
-                        {item.date ? new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
-                      </p>
+                    <div className="flex items-center gap-4">
+                      {/* DISPLAY FOTO LOG BELANJA */}
+                      {item.imageUrl ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-inner flex-shrink-0">
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                          <FileImageIcon className="w-5 h-5" />
+                        </div>
+                      )}
+
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-[#06322b]">{item.name || item.itemName}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">
+                          {item.date ? new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
+                        </p>
+                      </div>
                     </div>
                     <p className="text-sm font-bold text-[#06322b]">
                       Rp {Number(item.amount).toLocaleString('id-ID')}
@@ -331,9 +408,7 @@ export default function TrackingPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-400 text-sm">
-                Belum ada catatan konsumsi
-              </div>
+              <div className="text-center py-6 text-gray-400 text-sm">Belum ada catatan konsumsi</div>
             )}
           </Card>
         </div>
