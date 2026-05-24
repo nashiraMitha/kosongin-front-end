@@ -116,7 +116,7 @@ const dateRef = useRef<HTMLInputElement>(null);
       <div className="flex flex-col gap-2">
         <label className="text-sm font-bold">Nama Item</label>
         <input
-          className="input"
+                  className="rounded-xl border border-gray-50 p-3 focus:outline-none focus:ring-0 bg-white"
           placeholder="Contoh: Adidas Cheongsam..."
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
