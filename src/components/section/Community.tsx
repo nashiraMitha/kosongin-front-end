@@ -8,7 +8,15 @@ import { Input } from "@/components/ui/input";
 import { ShieldAlert, ArrowRight, ClipboardList, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+<<<<<<< HEAD
 export default function ImpulseShieldPage() {
+=======
+import { client } from "@/api/client.gen";
+import { getChallengesMe } from "@/api/sdk.gen";
+import Cookies from "js-cookie";
+
+export default function Community() {
+>>>>>>> 4722bc00a2f5104df26d7545e2923de7c29da9e4
   const router = useRouter();
   
   const [formData, setFormData] = useState({
@@ -29,9 +37,31 @@ export default function ImpulseShieldPage() {
       const parsed = JSON.parse(saved);
       setShieldList(parsed);
 
+<<<<<<< HEAD
       const cancelled = parsed.filter((item: any) => item.status === "Cancelled");
       const totalSaved = cancelled.reduce((acc: number, curr: any) => acc + Number(curr.price || 0), 0);
       const rate = parsed.length > 0 ? Math.round((cancelled.length / parsed.length) * 100) : 0;
+=======
+        if (token) {
+          client.setConfig({ headers: { Authorization: `Bearer ${token}` } });
+          try {
+            const meRes: any = await getChallengesMe();
+            const myData = meRes?.data?.data ?? meRes?.data ?? [];
+            const ids = myData.map((c: any) => c.id ?? c.challengeId ?? c.challenge?.id).filter(Boolean);
+            setJoinedIds(ids);
+          } catch (err) {
+            console.warn('Failed fetching user joined challenges:', err);
+            setJoinedIds([]);
+          }
+        } else {
+          setJoinedIds([]);
+        }
+      } catch (error) {
+        console.error('Failed fetch public challenges:', error);
+        setChallenges([]);
+      }
+    };
+>>>>>>> 4722bc00a2f5104df26d7545e2923de7c29da9e4
 
       setStats({ cancelledCount: cancelled.length, savedAmount: totalSaved, successRate: rate });
     }

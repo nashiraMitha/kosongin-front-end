@@ -6,10 +6,15 @@ import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Plus, ShieldCheck, Users, ClipboardList, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
+<<<<<<< HEAD
 
 import { client } from "@/api/client.gen";
 import { getDashboardInsight, getConsumptionLogs, getWishlist, getChallengeMe } from "@/api/sdk.gen";
 import Cookies from "js-cookie";
+=======
+import { getConsumptionLogs, getWishlist, getChallengesMe, getDashboardInsight } from "@/api";
+import { client } from "@/lib/api-client";
+>>>>>>> 4722bc00a2f5104df26d7545e2923de7c29da9e4
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -61,6 +66,7 @@ export default function DashboardPage() {
           setConsumptionData(mapped);
         }
 
+<<<<<<< HEAD
         // 3) Wishlist / shield from backend (if available). If not, fallback to localStorage
         try {
           const wishRes: any = await getWishlist();
@@ -75,6 +81,15 @@ export default function DashboardPage() {
           } catch {
             setShieldData([]);
           }
+=======
+        const wishData = wishRes.data;
+        if (wishData?.success) {
+          const rawData = wishData?.data || [];
+          const activeWishlist = rawData.filter(
+            (item: any) => item.whislistStatus === "waiting"
+          );
+          setShieldData(activeWishlist);
+>>>>>>> 4722bc00a2f5104df26d7545e2923de7c29da9e4
         }
 
         // 4) Joined challenges for user

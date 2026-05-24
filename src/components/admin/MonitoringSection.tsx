@@ -6,15 +6,31 @@ import {
 } from "react";
 
 import Cookies from "js-cookie";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid
+} from "recharts";
 
 import {
   getAdminMonitoring,
+  getChallengesLandingPageChallenge
 } from "@/api/sdk.gen";
+import { client } from "@/lib/api-client";
 
 export default function MonitoringSection() {
 
   const [analytics, setAnalytics] =
     useState<any>(null);
+    
+  const [topChallenges, setTopChallenges] =
+    useState<any[]>([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -26,6 +42,7 @@ export default function MonitoringSection() {
   useEffect(() => {
 
     fetchAnalytics();
+    fetchTopChallenges();
 
   }, []);
 
@@ -42,6 +59,7 @@ export default function MonitoringSection() {
       /* API */
       const res =
         await getAdminMonitoring({
+          client,
           headers: {
             Authorization:
               `Bearer ${token}`,
@@ -49,8 +67,8 @@ export default function MonitoringSection() {
         });
 
       console.log(
-        "MONITORING:",
-        res
+        "MONITORING DATA:",
+        res.data?.data
       );
 
       setAnalytics(
@@ -58,26 +76,37 @@ export default function MonitoringSection() {
       );
 
     } catch (err: any) {
-
       console.log(err);
-
-      console.log(
-        err.response?.status
-      );
-
-      console.log(
-        err.response?.data
-      );
-
       setError(
         "Gagal mengambil monitoring data"
       );
-
     } finally {
-
       setLoading(false);
-
     }
+  };
+
+  const fetchTopChallenges =
+    async () => {
+
+      try {
+
+        const res =
+          await getChallengesLandingPageChallenge();
+
+        console.log(
+          "TOP CHALLENGES:",
+          res.data
+        );
+
+        setTopChallenges(
+          res.data?.data || []
+        );
+
+      } catch (err) {
+
+        console.log(err);
+
+      }
   };
 
   /* LOADING */
@@ -115,24 +144,54 @@ export default function MonitoringSection() {
         Monitoring Aktivitas
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* USER ACTIVITY */}
-        <div className="h-[250px] bg-[#E6F0ED] rounded-2xl border flex items-center justify-center">
-
-          <p className="font-semibold text-gray-600">
-            Grafik User Activity
-          </p>
-
+        <div className="bg-[#FFFAF9] p-5 rounded-2xl border">
+          <p className="text-sm font-bold text-[#1F3A37] mb-4 uppercase tracking-wider">Aktivitas Pengguna (7 Hari)</p>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics?.dailyActiveUsers || []}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(val) => new Date(val).toLocaleDateString('id-ID', { weekday: 'short' })}
+                  tick={{fontSize: 10}}
+                  axisLine={false}
+                />
+                <YAxis tick={{fontSize: 10}} axisLine={false} tickLine={false} />
+                <Tooltip 
+                   contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                   formatter={(value: any) => [value, 'User Aktif']}
+                />
+                <Bar dataKey="totalActiveUsers" fill="#6B9080" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* CONSUMPTION */}
-        <div className="h-[250px] bg-[#F7E1E1] rounded-2xl border flex items-center justify-center">
-
-          <p className="font-semibold text-gray-600">
-            Grafik Konsumsi
-          </p>
-
+        <div className="bg-[#FFFAF9] p-5 rounded-2xl border">
+          <p className="text-sm font-bold text-[#1F3A37] mb-4 uppercase tracking-wider">Item Tercatat (7 Hari)</p>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics?.dailyLogs || []}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(val) => new Date(val).toLocaleDateString('id-ID', { weekday: 'short' })}
+                  tick={{fontSize: 10}}
+                  axisLine={false}
+                />
+                <YAxis tick={{fontSize: 10}} axisLine={false} tickLine={false} />
+                <Tooltip 
+                   contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                   formatter={(value: any) => [value, 'Item']}
+                />
+                <Bar dataKey="totalItems" fill="#F5BABB" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
       </div>
@@ -146,7 +205,7 @@ export default function MonitoringSection() {
 
         <div className="space-y-3">
 
-          {analytics?.top_challenges?.map(
+          {topChallenges.map(
             (
               challenge: any,
               index: number
@@ -160,11 +219,11 @@ export default function MonitoringSection() {
                 <div>
 
                   <p className="font-semibold text-[#032119]">
-                    {challenge.challengeTitle}
+                    {challenge.title}
                   </p>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {challenge.totalParticipants} peserta
+                    {challenge.participantsCount} peserta
                   </p>
 
                 </div>
