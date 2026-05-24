@@ -110,6 +110,7 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-[#FEFEFE] flex flex-col font-sans pb-20">
+      <LoginNavbar />
       <main className="px-6 md:px-12 lg:px-20 mt-10 space-y-12 animate-in fade-in duration-700">
         <section id="komunitas">
           <div className="flex items-center gap-3 mb-2">
