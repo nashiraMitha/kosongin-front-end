@@ -8,12 +8,15 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
 });
 
-// 🔥 TAMBAHKAN METADATA MANUAL DI SINI UNTUK MEMAKSA BROWSER MEMBACA Logo1.svg
 export const metadata = {
   title: "Kosongin",
   description: "Rem digital sebelum checkout",
   icons: {
-    icon: "/Logo1.svg", // Mengarah langsung ke public/Logo1.svg
+    icon: "/Logo1.svg",
+  },
+  // KODE VERIFIKASI DITARUH DI DALAM SINI:
+  verification: {
+    google: "b_1umSjzRcok8EmgiGKkuQa-PD5u0tcfcwuN9-LEJnM",
   },
 };
 
